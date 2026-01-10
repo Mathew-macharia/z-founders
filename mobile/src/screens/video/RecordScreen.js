@@ -6,7 +6,12 @@ import {
     TouchableOpacity,
     Dimensions,
     Alert,
-    ActivityIndicator
+    ActivityIndicator,
+    ScrollView,
+    KeyboardAvoidingView,
+    Platform,
+    TouchableWithoutFeedback,
+    Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
@@ -197,111 +202,122 @@ const RecordScreen = ({ navigation }) => {
     // Details step
     if (step === 'details') {
         return (
-            <View style={styles.container}>
-                <SafeAreaView style={styles.safeArea}>
-                    <View style={styles.header}>
-                        <TouchableOpacity onPress={() => setStep('preview')}>
-                            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Post Details</Text>
-                        <View style={{ width: 24 }} />
-                    </View>
-
-                    <View style={styles.detailsContent}>
-                        {/* Video Type */}
-                        <Text style={styles.sectionLabel}>What type of content is this?</Text>
-                        <View style={styles.typeOptions}>
-                            {VIDEO_TYPES.map((type) => (
-                                <TouchableOpacity
-                                    key={type.id}
-                                    style={[
-                                        styles.typeOption,
-                                        videoType === type.id && styles.typeOptionActive,
-                                        !canPostType(type.id) && styles.typeOptionDisabled
-                                    ]}
-                                    onPress={() => canPostType(type.id) && setVideoType(type.id)}
-                                    disabled={!canPostType(type.id)}
-                                >
-                                    <Text style={[
-                                        styles.typeOptionLabel,
-                                        videoType === type.id && styles.typeOptionLabelActive
-                                    ]}>
-                                        {type.label}
-                                    </Text>
-                                    <Text style={styles.typeOptionDesc}>{type.description}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        {/* Visibility */}
-                        <Text style={styles.sectionLabel}>Who can see this?</Text>
-                        <View style={styles.visibilityOptions}>
-                            {VISIBILITY_OPTIONS.map((opt) => (
-                                <TouchableOpacity
-                                    key={opt.id}
-                                    style={[
-                                        styles.visibilityOption,
-                                        visibility === opt.id && styles.visibilityOptionActive
-                                    ]}
-                                    onPress={() => setVisibility(opt.id)}
-                                >
-                                    <Text style={[
-                                        styles.visibilityLabel,
-                                        visibility === opt.id && styles.visibilityLabelActive
-                                    ]}>
-                                        {opt.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        {/* Caption */}
-                        <TextInput
-                            label="Caption"
-                            value={caption}
-                            onChangeText={setCaption}
-                            placeholder="What's this video about?"
-                            multiline
-                            numberOfLines={3}
-                            maxLength={500}
-                        />
-
-                        {/* Tags */}
-                        <TextInput
-                            label="Tags (comma-separated)"
-                            value={tags}
-                            onChangeText={setTags}
-                            placeholder="fintech, ai, saas"
-                        />
-
-                        {/* Pin option for pitches */}
-                        {videoType === 'PITCH' && user?.accountType === 'FOUNDER' && (
-                            <TouchableOpacity
-                                style={styles.pinOption}
-                                onPress={() => setIsPinned(!isPinned)}
-                            >
-                                <Ionicons
-                                    name={isPinned ? "checkbox" : "square-outline"}
-                                    size={24}
-                                    color={colors.primary[500]}
-                                />
-                                <View style={styles.pinOptionText}>
-                                    <Text style={styles.pinLabel}>Pin as main pitch</Text>
-                                    <Text style={styles.pinDesc}>This will be shown first on your profile</Text>
-                                </View>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.container}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <SafeAreaView style={styles.safeArea}>
+                        <View style={styles.header}>
+                            <TouchableOpacity onPress={() => setStep('preview')}>
+                                <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
                             </TouchableOpacity>
-                        )}
+                            <Text style={styles.headerTitle}>Post Details</Text>
+                            <TouchableOpacity onPress={handleUpload}>
+                                <Text style={styles.nextButton}>Done</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                        <Button
-                            title="Post Video"
-                            onPress={handleUpload}
-                            loading={isLoading}
-                            fullWidth
-                            style={styles.uploadButton}
-                        />
-                    </View>
-                </SafeAreaView>
-            </View>
+                        <ScrollView
+                            style={styles.detailsContent}
+                            contentContainerStyle={styles.detailsScrollContent}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            {/* Video Type */}
+                            <Text style={styles.sectionLabel}>What type of content is this?</Text>
+                            <View style={styles.typeOptions}>
+                                {VIDEO_TYPES.map((type) => (
+                                    <TouchableOpacity
+                                        key={type.id}
+                                        style={[
+                                            styles.typeOption,
+                                            videoType === type.id && styles.typeOptionActive,
+                                            !canPostType(type.id) && styles.typeOptionDisabled
+                                        ]}
+                                        onPress={() => canPostType(type.id) && setVideoType(type.id)}
+                                        disabled={!canPostType(type.id)}
+                                    >
+                                        <Text style={[
+                                            styles.typeOptionLabel,
+                                            videoType === type.id && styles.typeOptionLabelActive
+                                        ]}>
+                                            {type.label}
+                                        </Text>
+                                        <Text style={styles.typeOptionDesc}>{type.description}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            {/* Visibility */}
+                            <Text style={styles.sectionLabel}>Who can see this?</Text>
+                            <View style={styles.visibilityOptions}>
+                                {VISIBILITY_OPTIONS.map((opt) => (
+                                    <TouchableOpacity
+                                        key={opt.id}
+                                        style={[
+                                            styles.visibilityOption,
+                                            visibility === opt.id && styles.visibilityOptionActive
+                                        ]}
+                                        onPress={() => setVisibility(opt.id)}
+                                    >
+                                        <Text style={[
+                                            styles.visibilityLabel,
+                                            visibility === opt.id && styles.visibilityLabelActive
+                                        ]}>
+                                            {opt.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            {/* Caption */}
+                            <TextInput
+                                label="Caption"
+                                value={caption}
+                                onChangeText={setCaption}
+                                placeholder="What's this video about?"
+                                multiline
+                                numberOfLines={3}
+                                maxLength={500}
+                            />
+
+                            {/* Tags */}
+                            <TextInput
+                                label="Tags (comma-separated)"
+                                value={tags}
+                                onChangeText={setTags}
+                                placeholder="fintech, ai, saas"
+                            />
+
+                            {/* Pin option for pitches */}
+                            {videoType === 'PITCH' && user?.accountType === 'FOUNDER' && (
+                                <TouchableOpacity
+                                    style={styles.pinOption}
+                                    onPress={() => setIsPinned(!isPinned)}
+                                >
+                                    <Ionicons
+                                        name={isPinned ? "checkbox" : "square-outline"}
+                                        size={24}
+                                        color={colors.primary[500]}
+                                    />
+                                    <View style={styles.pinOptionText}>
+                                        <Text style={styles.pinLabel}>Pin as main pitch</Text>
+                                        <Text style={styles.pinDesc}>This will be shown first on your profile</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+
+                            <Button
+                                title="Post Video"
+                                onPress={handleUpload}
+                                loading={isLoading}
+                                fullWidth
+                                style={styles.uploadButton}
+                            />
+                        </ScrollView>
+                    </SafeAreaView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         );
     }
 
@@ -358,78 +374,77 @@ const RecordScreen = ({ navigation }) => {
                 style={styles.camera}
                 facing={cameraType}
                 mode="video"
-            >
-                <SafeAreaView style={styles.cameraOverlay}>
-                    {/* Header */}
-                    <View style={styles.cameraHeader}>
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <Ionicons name="close" size={28} color={colors.white} />
-                        </TouchableOpacity>
+            />
+            <SafeAreaView style={styles.cameraOverlay}>
+                {/* Header */}
+                <View style={styles.cameraHeader}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Ionicons name="close" size={28} color={colors.white} />
+                    </TouchableOpacity>
 
-                        {isRecording && (
-                            <View style={styles.recordingIndicator}>
-                                <View style={styles.recordingDot} />
-                                <Text style={styles.recordingTime}>
-                                    {formatDuration(recordingDuration)} / {formatDuration(MAX_DURATION)}
-                                </Text>
-                            </View>
-                        )}
-
-                        <TouchableOpacity
-                            onPress={() => setCameraType(
-                                cameraType === 'front' ? 'back' : 'front'
-                            )}
-                        >
-                            <Ionicons name="camera-reverse" size={28} color={colors.white} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Progress bar */}
                     {isRecording && (
-                        <View style={styles.progressBar}>
-                            <View
-                                style={[
-                                    styles.progressFill,
-                                    { width: `${(recordingDuration / MAX_DURATION) * 100}%` }
-                                ]}
-                            />
+                        <View style={styles.recordingIndicator}>
+                            <View style={styles.recordingDot} />
+                            <Text style={styles.recordingTime}>
+                                {formatDuration(recordingDuration)} / {formatDuration(MAX_DURATION)}
+                            </Text>
                         </View>
                     )}
 
-                    {/* Controls */}
-                    <View style={styles.cameraControls}>
-                        <TouchableOpacity style={styles.galleryButton} onPress={pickVideo}>
-                            <Ionicons name="images" size={28} color={colors.white} />
-                        </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => setCameraType(
+                            cameraType === 'front' ? 'back' : 'front'
+                        )}
+                    >
+                        <Ionicons name="camera-reverse" size={28} color={colors.white} />
+                    </TouchableOpacity>
+                </View>
 
-                        <TouchableOpacity
-                            style={styles.recordButton}
-                            onPress={isRecording ? stopRecording : startRecording}
-                        >
-                            <LinearGradient
-                                colors={isRecording ? [colors.error.main, colors.error.dark] : [colors.white, colors.white]}
-                                style={styles.recordButtonInner}
-                            >
-                                {isRecording ? (
-                                    <View style={styles.stopIcon} />
-                                ) : null}
-                            </LinearGradient>
-                        </TouchableOpacity>
-
-                        <View style={{ width: 50 }} />
+                {/* Progress bar */}
+                {isRecording && (
+                    <View style={styles.progressBar}>
+                        <View
+                            style={[
+                                styles.progressFill,
+                                { width: `${(recordingDuration / MAX_DURATION) * 100}%` }
+                            ]}
+                        />
                     </View>
+                )}
 
-                    {/* Tips */}
-                    {!isRecording && (
-                        <View style={styles.tips}>
-                            <Text style={styles.tipText}>💡 Tips for a great pitch:</Text>
-                            <Text style={styles.tipText}>• Keep it under 90 seconds</Text>
-                            <Text style={styles.tipText}>• State the problem & solution clearly</Text>
-                            <Text style={styles.tipText}>• Show your personality!</Text>
-                        </View>
-                    )}
-                </SafeAreaView>
-            </CameraView>
+                {/* Controls */}
+                <View style={styles.cameraControls}>
+                    <TouchableOpacity style={styles.galleryButton} onPress={pickVideo}>
+                        <Ionicons name="images" size={28} color={colors.white} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.recordButton}
+                        onPress={isRecording ? stopRecording : startRecording}
+                    >
+                        <LinearGradient
+                            colors={isRecording ? [colors.error.main, colors.error.dark] : [colors.white, colors.white]}
+                            style={styles.recordButtonInner}
+                        >
+                            {isRecording ? (
+                                <View style={styles.stopIcon} />
+                            ) : null}
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    <View style={{ width: 50 }} />
+                </View>
+
+                {/* Tips */}
+                {!isRecording && (
+                    <View style={styles.tips}>
+                        <Text style={styles.tipText}>💡 Tips for a great pitch:</Text>
+                        <Text style={styles.tipText}>• Keep it under 90 seconds</Text>
+                        <Text style={styles.tipText}>• State the problem & solution clearly</Text>
+                        <Text style={styles.tipText}>• Show your personality!</Text>
+                    </View>
+                )}
+            </SafeAreaView>
         </View>
     );
 };
@@ -479,7 +494,7 @@ const styles = StyleSheet.create({
         color: colors.primary[500],
     },
     camera: {
-        flex: 1,
+        ...StyleSheet.absoluteFillObject,
     },
     cameraOverlay: {
         flex: 1,
@@ -586,7 +601,10 @@ const styles = StyleSheet.create({
     },
     detailsContent: {
         flex: 1,
+    },
+    detailsScrollContent: {
         padding: spacing[4],
+        paddingBottom: spacing[24], // Extra padding for bottom button/safe area
     },
     sectionLabel: {
         ...typography.styles.bodyMedium,
