@@ -6,7 +6,9 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Alert
+    Alert,
+    KeyboardAvoidingView,
+    Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -140,190 +142,196 @@ const EditProfileScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView contentContainerStyle={styles.content}>
-                    {/* Avatar */}
-                    <TouchableOpacity style={styles.avatarSection} onPress={pickImage}>
-                        {avatar ? (
-                            <Image source={{ uri: avatar }} style={styles.avatar} />
-                        ) : (
-                            <LinearGradient
-                                colors={[colors.primary[500], colors.primary[600]]}
-                                style={styles.avatar}
-                            >
-                                <Ionicons name="person" size={40} color={colors.white} />
-                            </LinearGradient>
-                        )}
-                        <View style={styles.avatarEditBadge}>
-                            <Ionicons name="camera" size={16} color={colors.white} />
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* Basic Info */}
-                    <Text style={styles.sectionTitle}>Basic Info</Text>
-
-                    <TextInput
-                        label="Bio"
-                        value={bio}
-                        onChangeText={setBio}
-                        placeholder="Tell people about yourself"
-                        multiline
-                        numberOfLines={3}
-                        maxLength={300}
-                    />
-
-                    <TextInput
-                        label="Location"
-                        value={location}
-                        onChangeText={setLocation}
-                        placeholder="San Francisco, CA"
-                        leftIcon={<Ionicons name="location-outline" size={20} color={colors.text.tertiary} />}
-                    />
-
-                    <TextInput
-                        label="Website"
-                        value={website}
-                        onChangeText={setWebsite}
-                        placeholder="https://yoursite.com"
-                        leftIcon={<Ionicons name="globe-outline" size={20} color={colors.text.tertiary} />}
-                        keyboardType="url"
-                    />
-
-                    {/* Founder-specific fields */}
-                    {user?.accountType === 'FOUNDER' && (
-                        <>
-                            <Text style={styles.sectionTitle}>Founder Profile</Text>
-
-                            <TextInput
-                                label="Company/Project Name"
-                                value={companyName}
-                                onChangeText={setCompanyName}
-                                placeholder="Your startup name"
-                            />
-
-                            <TextInput
-                                label="Tagline"
-                                value={tagline}
-                                onChangeText={setTagline}
-                                placeholder="One-liner about your startup"
-                                maxLength={100}
-                            />
-
-                            <TextInput
-                                label="Industry"
-                                value={industry}
-                                onChangeText={setIndustry}
-                                placeholder="e.g., Fintech, Health, AI"
-                            />
-
-                            <Text style={styles.sectionTitle}>What are you looking for?</Text>
-
-                            <CheckboxOption
-                                label="💰 Funding"
-                                value={lookingForFunding}
-                                onToggle={() => setLookingForFunding(!lookingForFunding)}
-                                description="Actively seeking investment"
-                            />
-
-                            <CheckboxOption
-                                label="🤝 Cofounder"
-                                value={lookingForCofounder}
-                                onToggle={() => setLookingForCofounder(!lookingForCofounder)}
-                                description="Looking for a partner"
-                            />
-
-                            <CheckboxOption
-                                label="💬 Feedback"
-                                value={lookingForFeedback}
-                                onToggle={() => setLookingForFeedback(!lookingForFeedback)}
-                                description="Open to advice and input"
-                            />
-                        </>
-                    )}
-
-                    {/* Builder-specific fields */}
-                    {user?.accountType === 'BUILDER' && (
-                        <>
-                            <Text style={styles.sectionTitle}>Builder Profile</Text>
-
-                            <TextInput
-                                label="Skills (comma-separated)"
-                                value={skills}
-                                onChangeText={setSkills}
-                                placeholder="React, Node.js, Python, Design"
-                            />
-
-                            <Text style={styles.fieldLabel}>Availability</Text>
-                            <View style={styles.availabilityOptions}>
-                                {['full-time', 'part-time', 'weekends', 'consulting'].map((opt) => (
-                                    <TouchableOpacity
-                                        key={opt}
-                                        style={[styles.availabilityChip, availability === opt && styles.availabilityChipActive]}
-                                        onPress={() => setAvailability(opt)}
-                                    >
-                                        <Text style={[styles.availabilityText, availability === opt && styles.availabilityTextActive]}>
-                                            {opt}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <CheckboxOption
-                                label="🔍 Looking for a project"
-                                value={lookingForProject}
-                                onToggle={() => setLookingForProject(!lookingForProject)}
-                                description="Show founders you're available"
-                            />
-                        </>
-                    )}
-
-                    {/* Investor-specific fields */}
-                    {user?.accountType === 'INVESTOR' && (
-                        <>
-                            <Text style={styles.sectionTitle}>Investor Profile</Text>
-
-                            <TextInput
-                                label="Firm"
-                                value={firm}
-                                onChangeText={setFirm}
-                                placeholder="Your fund or firm name"
-                            />
-
-                            <TextInput
-                                label="Title"
-                                value={investorTitle}
-                                onChangeText={setInvestorTitle}
-                                placeholder="e.g., Partner, Principal"
-                            />
-
-                            <TextInput
-                                label="Investment Thesis"
-                                value={thesis}
-                                onChangeText={setThesis}
-                                placeholder="What types of companies do you invest in?"
-                                multiline
-                                numberOfLines={3}
-                            />
-
-                            <Text style={styles.sectionTitle}>Privacy</Text>
-
-                            <CheckboxOption
-                                label="🌍 Public Profile"
-                                value={isPublicMode}
-                                onToggle={() => setIsPublicMode(!isPublicMode)}
-                                description="Founders can see your profile details"
-                            />
-
-                            {!isPublicMode && (
-                                <View style={styles.privateNote}>
-                                    <Ionicons name="information-circle" size={20} color={colors.warning.main} />
-                                    <Text style={styles.privateNoteText}>
-                                        In stealth mode, your profile is hidden until you engage with a founder.
-                                    </Text>
-                                </View>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                >
+                    <ScrollView contentContainerStyle={styles.content}>
+                        {/* Avatar */}
+                        <TouchableOpacity style={styles.avatarSection} onPress={pickImage}>
+                            {avatar ? (
+                                <Image source={{ uri: avatar }} style={styles.avatar} />
+                            ) : (
+                                <LinearGradient
+                                    colors={[colors.primary[500], colors.primary[600]]}
+                                    style={styles.avatar}
+                                >
+                                    <Ionicons name="person" size={40} color={colors.white} />
+                                </LinearGradient>
                             )}
-                        </>
-                    )}
-                </ScrollView>
+                            <View style={styles.avatarEditBadge}>
+                                <Ionicons name="camera" size={16} color={colors.white} />
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Basic Info */}
+                        <Text style={styles.sectionTitle}>Basic Info</Text>
+
+                        <TextInput
+                            label="Bio"
+                            value={bio}
+                            onChangeText={setBio}
+                            placeholder="Tell people about yourself"
+                            multiline
+                            numberOfLines={3}
+                            maxLength={300}
+                        />
+
+                        <TextInput
+                            label="Location"
+                            value={location}
+                            onChangeText={setLocation}
+                            placeholder="San Francisco, CA"
+                            leftIcon={<Ionicons name="location-outline" size={20} color={colors.text.tertiary} />}
+                        />
+
+                        <TextInput
+                            label="Website"
+                            value={website}
+                            onChangeText={setWebsite}
+                            placeholder="https://yoursite.com"
+                            leftIcon={<Ionicons name="globe-outline" size={20} color={colors.text.tertiary} />}
+                            keyboardType="url"
+                        />
+
+                        {/* Founder-specific fields */}
+                        {user?.accountType === 'FOUNDER' && (
+                            <>
+                                <Text style={styles.sectionTitle}>Founder Profile</Text>
+
+                                <TextInput
+                                    label="Company/Project Name"
+                                    value={companyName}
+                                    onChangeText={setCompanyName}
+                                    placeholder="Your startup name"
+                                />
+
+                                <TextInput
+                                    label="Tagline"
+                                    value={tagline}
+                                    onChangeText={setTagline}
+                                    placeholder="One-liner about your startup"
+                                    maxLength={100}
+                                />
+
+                                <TextInput
+                                    label="Industry"
+                                    value={industry}
+                                    onChangeText={setIndustry}
+                                    placeholder="e.g., Fintech, Health, AI"
+                                />
+
+                                <Text style={styles.sectionTitle}>What are you looking for?</Text>
+
+                                <CheckboxOption
+                                    label="💰 Funding"
+                                    value={lookingForFunding}
+                                    onToggle={() => setLookingForFunding(!lookingForFunding)}
+                                    description="Actively seeking investment"
+                                />
+
+                                <CheckboxOption
+                                    label="🤝 Cofounder"
+                                    value={lookingForCofounder}
+                                    onToggle={() => setLookingForCofounder(!lookingForCofounder)}
+                                    description="Looking for a partner"
+                                />
+
+                                <CheckboxOption
+                                    label="💬 Feedback"
+                                    value={lookingForFeedback}
+                                    onToggle={() => setLookingForFeedback(!lookingForFeedback)}
+                                    description="Open to advice and input"
+                                />
+                            </>
+                        )}
+
+                        {/* Builder-specific fields */}
+                        {user?.accountType === 'BUILDER' && (
+                            <>
+                                <Text style={styles.sectionTitle}>Builder Profile</Text>
+
+                                <TextInput
+                                    label="Skills (comma-separated)"
+                                    value={skills}
+                                    onChangeText={setSkills}
+                                    placeholder="React, Node.js, Python, Design"
+                                />
+
+                                <Text style={styles.fieldLabel}>Availability</Text>
+                                <View style={styles.availabilityOptions}>
+                                    {['full-time', 'part-time', 'weekends', 'consulting'].map((opt) => (
+                                        <TouchableOpacity
+                                            key={opt}
+                                            style={[styles.availabilityChip, availability === opt && styles.availabilityChipActive]}
+                                            onPress={() => setAvailability(opt)}
+                                        >
+                                            <Text style={[styles.availabilityText, availability === opt && styles.availabilityTextActive]}>
+                                                {opt}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <CheckboxOption
+                                    label="🔍 Looking for a project"
+                                    value={lookingForProject}
+                                    onToggle={() => setLookingForProject(!lookingForProject)}
+                                    description="Show founders you're available"
+                                />
+                            </>
+                        )}
+
+                        {/* Investor-specific fields */}
+                        {user?.accountType === 'INVESTOR' && (
+                            <>
+                                <Text style={styles.sectionTitle}>Investor Profile</Text>
+
+                                <TextInput
+                                    label="Firm"
+                                    value={firm}
+                                    onChangeText={setFirm}
+                                    placeholder="Your fund or firm name"
+                                />
+
+                                <TextInput
+                                    label="Title"
+                                    value={investorTitle}
+                                    onChangeText={setInvestorTitle}
+                                    placeholder="e.g., Partner, Principal"
+                                />
+
+                                <TextInput
+                                    label="Investment Thesis"
+                                    value={thesis}
+                                    onChangeText={setThesis}
+                                    placeholder="What types of companies do you invest in?"
+                                    multiline
+                                    numberOfLines={3}
+                                />
+
+                                <Text style={styles.sectionTitle}>Privacy</Text>
+
+                                <CheckboxOption
+                                    label="🌍 Public Profile"
+                                    value={isPublicMode}
+                                    onToggle={() => setIsPublicMode(!isPublicMode)}
+                                    description="Founders can see your profile details"
+                                />
+
+                                {!isPublicMode && (
+                                    <View style={styles.privateNote}>
+                                        <Ionicons name="information-circle" size={20} color={colors.warning.main} />
+                                        <Text style={styles.privateNoteText}>
+                                            In stealth mode, your profile is hidden until you engage with a founder.
+                                        </Text>
+                                    </View>
+                                )}
+                            </>
+                        )}
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </SafeAreaView>
         </View>
     );

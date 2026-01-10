@@ -113,6 +113,19 @@ router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
 
     const { profile, founderProfile, investorProfile, builderProfile, socialLinks } = req.body;
 
+    // Helper to request cleaning
+    const cleanProfileData = (data, intFields = []) => {
+        const cleaned = { ...data };
+        Object.keys(cleaned).forEach(key => {
+            if (cleaned[key] === '') {
+                cleaned[key] = undefined; // Prisma treats undefined as "do nothing" in update, or null if nullable
+            } else if (intFields.includes(key) && cleaned[key]) {
+                cleaned[key] = parseInt(cleaned[key], 10);
+            }
+        });
+        return cleaned;
+    };
+
     // Update base profile
     if (profile) {
         await prisma.userProfile.update({
@@ -129,48 +142,56 @@ router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
 
     // Update type-specific profiles
     if (founderProfile && req.user.accountType === 'FOUNDER') {
+        const cleanedFounder = cleanProfileData(founderProfile);
+
         await prisma.founderProfile.upsert({
             where: { userId: id },
             create: {
                 userId: id,
-                ...founderProfile
+                ...cleanedFounder
             },
-            update: founderProfile
+            update: cleanedFounder
         });
 
         // Update fundraising details if provided
         if (founderProfile.fundraisingDetails) {
+            const cleaningFundraising = cleanProfileData(founderProfile.fundraisingDetails, ['amount']);
+
             const fp = await prisma.founderProfile.findUnique({ where: { userId: id } });
             await prisma.fundraisingDetails.upsert({
                 where: { founderId: fp.id },
                 create: {
                     founderId: fp.id,
-                    ...founderProfile.fundraisingDetails
+                    ...cleaningFundraising
                 },
-                update: founderProfile.fundraisingDetails
+                update: cleaningFundraising
             });
         }
     }
 
     if (investorProfile && req.user.accountType === 'INVESTOR') {
+        const cleanedInvestor = cleanProfileData(investorProfile, ['checkSizeMin', 'checkSizeMax', 'investmentYear']);
+
         await prisma.investorProfile.upsert({
             where: { userId: id },
             create: {
                 userId: id,
-                ...investorProfile
+                ...cleanedInvestor
             },
-            update: investorProfile
+            update: cleanedInvestor
         });
     }
 
     if (builderProfile && req.user.accountType === 'BUILDER') {
+        const cleanedBuilder = cleanProfileData(builderProfile);
+
         await prisma.builderProfile.upsert({
             where: { userId: id },
             create: {
                 userId: id,
-                ...builderProfile
+                ...cleanedBuilder
             },
-            update: builderProfile
+            update: cleanedBuilder
         });
     }
 

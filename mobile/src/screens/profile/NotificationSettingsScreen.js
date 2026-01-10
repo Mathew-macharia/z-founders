@@ -25,6 +25,17 @@ const NotificationSettingsScreen = ({ navigation }) => {
         weeklyDigest: true,
     });
 
+    // Map UI keys to Backend Notification Types
+    const TYPE_MAPPING = {
+        likes: 'new_like',
+        comments: 'new_comment',
+        follows: 'new_follower',
+        investorInterest: 'express_interest',
+        messages: 'new_message',
+        milestones: 'milestone',
+        weeklyDigest: 'weekly_digest',
+    };
+
     useEffect(() => {
         loadSettings();
     }, []);
@@ -32,20 +43,69 @@ const NotificationSettingsScreen = ({ navigation }) => {
     const loadSettings = async () => {
         try {
             const response = await notificationsAPI.getPreferences();
-            if (response.data.preferences) {
-                setSettings(prev => ({ ...prev, ...response.data.preferences }));
-            }
+            const prefs = response.data.preferences || {};
+
+            // Map backend prefs to UI state
+            const newSettings = { ...settings };
+
+            Object.entries(TYPE_MAPPING).forEach(([uiKey, backendType]) => {
+                if (prefs[backendType]) {
+                    // unexpected structure? We assume if push OR email is on, the UI toggle is on.
+                    // Or primarily check pushEnabled for the main toggle.
+                    newSettings[uiKey] = prefs[backendType].pushEnabled;
+                }
+            });
+
+            // Also load global toggles if they exist in a special way? 
+            // The backend specifices notification types, not global 'pushEnabled'.
+            // required for UI state consistency.
+
+            setSettings(newSettings);
         } catch (error) {
             console.error('Failed to load notification settings:', error);
         }
     };
 
     const updateSetting = async (key, value) => {
+        // Optimistic update
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
 
         try {
-            await notificationsAPI.updatePreferences(newSettings);
+            // Prepare payload
+            const payload = { preferences: {} };
+
+            // Handle global toggles separately if needed, but for now 
+            // if it's a specific type, we update that type.
+
+            if (key === 'pushEnabled' || key === 'emailEnabled') {
+                // If global toggle, we might need to update ALL types?
+                // For simplicity/safety, we only update specific types if they map to a backend type.
+                // If key is 'pushEnabled', the backend doesn't support a global flag endpoint yet.
+                // We will ignore server update for global flags for now or implement bulk update.
+                return;
+            }
+
+            const backendType = TYPE_MAPPING[key];
+            if (backendType) {
+                // We are toggling a specific setting.
+                // We assume this controls 'pushEnabled'. 
+                // If emailEnabled is globally on/off, we might want to respect that?
+                // For now, simple mapping: Toggle = Push Enabled.
+
+                payload.preferences[backendType] = {
+                    pushEnabled: value,
+                    // Preserve existing email setting? 
+                    // Complex without full state. defaulting to false or keeping previous could be tricky.
+                    // Let's assume the backend 'upsert' merges if we only send fields we want to change?
+                    // Reviewing backend: yes, it uses 'update' for existing.
+                    // But 'upsert' create requires fields. 
+                    // Let's send both to be safe, defaulting email to false if not known.
+                    emailEnabled: settings.emailEnabled // Use the global email setting?
+                };
+
+                await notificationsAPI.updatePreferences(payload);
+            }
         } catch (error) {
             console.error('Failed to update setting:', error);
             // Revert on failure

@@ -126,7 +126,7 @@ export const searchAPI = {
 };
 
 export const notificationsAPI = {
-    get: (params) => api.get('/notifications', { params }),
+    getAll: (params) => api.get('/notifications', { params }),
     markRead: (id) => api.patch(`/notifications/${id}/read`),
     markAllRead: () => api.patch('/notifications/read-all'),
     getPreferences: () => api.get('/notifications/preferences'),

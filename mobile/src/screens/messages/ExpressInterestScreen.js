@@ -6,7 +6,9 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Alert
+    Alert,
+    KeyboardAvoidingView,
+    Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -120,136 +122,142 @@ const ExpressInterestScreen = ({ navigation, route }) => {
                     <View style={{ width: 24 }} />
                 </View>
 
-                <ScrollView contentContainerStyle={styles.content}>
-                    {/* Celebration card */}
-                    <View style={styles.celebrationCard}>
-                        <LinearGradient
-                            colors={[colors.warning.main + '30', colors.warning.main + '10']}
-                            style={styles.celebrationGradient}
-                        >
-                            <Text style={styles.celebrationEmoji}>🎉</Text>
-                            <Text style={styles.celebrationTitle}>
-                                {isPrivate ? 'A verified investor' : investor?.investorProfile?.firm || 'An investor'}
-                            </Text>
-                            <Text style={styles.celebrationSubtitle}>
-                                is interested in your pitch!
-                            </Text>
-                        </LinearGradient>
-                    </View>
-
-                    {/* Investor info (if public) */}
-                    {!isPrivate && investor && (
-                        <View style={styles.investorCard}>
-                            <View style={styles.investorHeader}>
-                                <LinearGradient
-                                    colors={[colors.badges.investor, colors.badges.investor + 'CC']}
-                                    style={styles.investorAvatar}
-                                >
-                                    <Ionicons name="trending-up" size={24} color={colors.white} />
-                                </LinearGradient>
-                                <View style={styles.investorInfo}>
-                                    <Text style={styles.investorName}>
-                                        {investor.investorProfile?.firm || 'Investor'}
-                                    </Text>
-                                    {investor.investorProfile?.title && (
-                                        <Text style={styles.investorTitle}>
-                                            {investor.investorProfile.title}
-                                        </Text>
-                                    )}
-                                </View>
-                                <View style={styles.verifiedBadge}>
-                                    <Ionicons name="shield-checkmark" size={16} color={colors.success.main} />
-                                    <Text style={styles.verifiedText}>Verified</Text>
-                                </View>
-                            </View>
-
-                            {investor.investorProfile?.thesis && (
-                                <View style={styles.thesisSection}>
-                                    <Text style={styles.thesisLabel}>Investment Thesis</Text>
-                                    <Text style={styles.thesisText}>{investor.investorProfile.thesis}</Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-
-                    {/* If private investor */}
-                    {isPrivate && (
-                        <View style={styles.privateCard}>
-                            <Ionicons name="eye-off" size={24} color={colors.text.tertiary} />
-                            <Text style={styles.privateTitle}>Stealth Mode Investor</Text>
-                            <Text style={styles.privateText}>
-                                This investor prefers to stay private until you connect.
-                                Their profile will be revealed after you accept.
-                            </Text>
-                        </View>
-                    )}
-
-                    {/* Video context */}
-                    {video && (
-                        <View style={styles.videoContext}>
-                            <Text style={styles.contextLabel}>They're interested in your pitch:</Text>
-                            <TouchableOpacity
-                                style={styles.videoPreview}
-                                onPress={() => navigation.navigate('VideoDetail', { videoId: video.id })}
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+                >
+                    <ScrollView contentContainerStyle={styles.content}>
+                        {/* Celebration card */}
+                        <View style={styles.celebrationCard}>
+                            <LinearGradient
+                                colors={[colors.warning.main + '30', colors.warning.main + '10']}
+                                style={styles.celebrationGradient}
                             >
-                                {video.thumbnailUrl ? (
-                                    <Image source={{ uri: video.thumbnailUrl }} style={styles.videoThumbnail} />
-                                ) : (
-                                    <View style={styles.videoPlaceholder}>
-                                        <Ionicons name="play" size={24} color={colors.text.tertiary} />
+                                <Text style={styles.celebrationEmoji}>🎉</Text>
+                                <Text style={styles.celebrationTitle}>
+                                    {isPrivate ? 'A verified investor' : investor?.investorProfile?.firm || 'An investor'}
+                                </Text>
+                                <Text style={styles.celebrationSubtitle}>
+                                    is interested in your pitch!
+                                </Text>
+                            </LinearGradient>
+                        </View>
+
+                        {/* Investor info (if public) */}
+                        {!isPrivate && investor && (
+                            <View style={styles.investorCard}>
+                                <View style={styles.investorHeader}>
+                                    <LinearGradient
+                                        colors={[colors.badges.investor, colors.badges.investor + 'CC']}
+                                        style={styles.investorAvatar}
+                                    >
+                                        <Ionicons name="trending-up" size={24} color={colors.white} />
+                                    </LinearGradient>
+                                    <View style={styles.investorInfo}>
+                                        <Text style={styles.investorName}>
+                                            {investor.investorProfile?.firm || 'Investor'}
+                                        </Text>
+                                        {investor.investorProfile?.title && (
+                                            <Text style={styles.investorTitle}>
+                                                {investor.investorProfile.title}
+                                            </Text>
+                                        )}
+                                    </View>
+                                    <View style={styles.verifiedBadge}>
+                                        <Ionicons name="shield-checkmark" size={16} color={colors.success.main} />
+                                        <Text style={styles.verifiedText}>Verified</Text>
+                                    </View>
+                                </View>
+
+                                {investor.investorProfile?.thesis && (
+                                    <View style={styles.thesisSection}>
+                                        <Text style={styles.thesisLabel}>Investment Thesis</Text>
+                                        <Text style={styles.thesisText}>{investor.investorProfile.thesis}</Text>
                                     </View>
                                 )}
-                                <Text style={styles.videoCaption} numberOfLines={2}>
-                                    {video.caption || 'Your pitch video'}
+                            </View>
+                        )}
+
+                        {/* If private investor */}
+                        {isPrivate && (
+                            <View style={styles.privateCard}>
+                                <Ionicons name="eye-off" size={24} color={colors.text.tertiary} />
+                                <Text style={styles.privateTitle}>Stealth Mode Investor</Text>
+                                <Text style={styles.privateText}>
+                                    This investor prefers to stay private until you connect.
+                                    Their profile will be revealed after you accept.
                                 </Text>
-                            </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* Video context */}
+                        {video && (
+                            <View style={styles.videoContext}>
+                                <Text style={styles.contextLabel}>They're interested in your pitch:</Text>
+                                <TouchableOpacity
+                                    style={styles.videoPreview}
+                                    onPress={() => navigation.navigate('VideoDetail', { videoId: video.id })}
+                                >
+                                    {video.thumbnailUrl ? (
+                                        <Image source={{ uri: video.thumbnailUrl }} style={styles.videoThumbnail} />
+                                    ) : (
+                                        <View style={styles.videoPlaceholder}>
+                                            <Ionicons name="play" size={24} color={colors.text.tertiary} />
+                                        </View>
+                                    )}
+                                    <Text style={styles.videoCaption} numberOfLines={2}>
+                                        {video.caption || 'Your pitch video'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* Interest message */}
+                        {interest.message && (
+                            <View style={styles.messageCard}>
+                                <Text style={styles.messageLabel}>Their message:</Text>
+                                <Text style={styles.messageText}>"{interest.message}"</Text>
+                            </View>
+                        )}
+
+                        {/* Response section */}
+                        <View style={styles.responseSection}>
+                            <Text style={styles.responseLabel}>Your response (optional):</Text>
+                            <TextInput
+                                value={responseMessage}
+                                onChangeText={setResponseMessage}
+                                placeholder="Thanks for your interest! I'd love to chat more about..."
+                                multiline
+                                numberOfLines={3}
+                                maxLength={500}
+                            />
                         </View>
-                    )}
 
-                    {/* Interest message */}
-                    {interest.message && (
-                        <View style={styles.messageCard}>
-                            <Text style={styles.messageLabel}>Their message:</Text>
-                            <Text style={styles.messageText}>"{interest.message}"</Text>
+                        {/* Action buttons */}
+                        <View style={styles.actions}>
+                            <Button
+                                title="Accept & Connect"
+                                onPress={handleAccept}
+                                loading={isResponding}
+                                fullWidth
+                                icon={<Ionicons name="checkmark-circle" size={20} color={colors.white} />}
+                            />
+                            <Button
+                                title="Decline"
+                                onPress={handleDecline}
+                                variant="ghost"
+                                fullWidth
+                                style={styles.declineButton}
+                                textStyle={{ color: colors.text.secondary }}
+                            />
                         </View>
-                    )}
 
-                    {/* Response section */}
-                    <View style={styles.responseSection}>
-                        <Text style={styles.responseLabel}>Your response (optional):</Text>
-                        <TextInput
-                            value={responseMessage}
-                            onChangeText={setResponseMessage}
-                            placeholder="Thanks for your interest! I'd love to chat more about..."
-                            multiline
-                            numberOfLines={3}
-                            maxLength={500}
-                        />
-                    </View>
-
-                    {/* Action buttons */}
-                    <View style={styles.actions}>
-                        <Button
-                            title="Accept & Connect"
-                            onPress={handleAccept}
-                            loading={isResponding}
-                            fullWidth
-                            icon={<Ionicons name="checkmark-circle" size={20} color={colors.white} />}
-                        />
-                        <Button
-                            title="Decline"
-                            onPress={handleDecline}
-                            variant="ghost"
-                            fullWidth
-                            style={styles.declineButton}
-                            textStyle={{ color: colors.text.secondary }}
-                        />
-                    </View>
-
-                    <Text style={styles.hint}>
-                        💡 Accepting will create a chat with this investor
-                    </Text>
-                </ScrollView>
+                        <Text style={styles.hint}>
+                            💡 Accepting will create a chat with this investor
+                        </Text>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </SafeAreaView>
         </View>
     );
