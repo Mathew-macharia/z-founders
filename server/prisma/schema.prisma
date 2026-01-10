@@ -1,0 +1,711 @@
+// Prisma schema for Z Founders platform
+// Complete database schema covering all 16 sections of product strategy
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum AccountType {
+  FOUNDER
+  BUILDER
+  INVESTOR
+  LURKER
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VideoType {
+  PITCH
+  UPDATE
+  ASK
+  WIN_LOSS
+}
+
+enum VideoVisibility {
+  PUBLIC
+  COMMUNITY
+  INVESTORS_ONLY
+}
+
+enum ConversationStatus {
+  ACTIVE
+  REQUEST
+  BLOCKED
+}
+
+enum NotificationPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ModerationAction {
+  WARNING
+  SUSPEND_7_DAY
+  SUSPEND_30_DAY
+  PERMANENT_BAN
+}
+
+enum SubscriptionTier {
+  FREE
+  FOUNDER_PRO
+  INVESTOR_PRO
+  STEALTH_MODE
+}
+
+enum ReportCategory {
+  SPAM
+  SCAM
+  INAPPROPRIATE
+  STOLEN_IDEA
+  HARASSMENT
+}
+
+// ============================================
+// USERS & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  passwordHash  String
+  accountType   AccountType @default(LURKER)
+  isVerified    Boolean     @default(false)
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  profile              UserProfile?
+  founderProfile       FounderProfile?
+  investorProfile      InvestorProfile?
+  builderProfile       BuilderProfile?
+  investorVerification InvestorVerification?
+  videos               Video[]
+  comments             Comment[]
+  likes                Like[]
+  saves                Save[]
+  shares               Share[]
+  videoViews           VideoView[]
+  
+  following            Follow[]           @relation("follower")
+  followers            Follow[]           @relation("following")
+  
+  sentMessages         Message[]          @relation("sender")
+  conversations1       Conversation[]     @relation("participant1")
+  conversations2       Conversation[]     @relation("participant2")
+  
+  expressedInterests   ExpressInterest[]  @relation("investor")
+  receivedInterests    ExpressInterest[]  @relation("founder")
+  
+  profileRevealsAsInvestor ProfileReveal[] @relation("revealedInvestor")
+  profileRevealsAsFounder  ProfileReveal[] @relation("revealedToFounder")
+  
+  notifications        Notification[]
+  notificationPrefs    NotificationPreference[]
+  
+  subscription         Subscription?
+  
+  contentReports       ContentReport[]    @relation("reporter")
+  moderationActions    ModerationActionRecord[] @relation("moderatedUser")
+  
+  sessions             Session[]
+  searchHistory        SearchHistory[]
+  onboardingProgress   OnboardingProgress?
+  accountTypeChanges   AccountTypeChange[]
+  messagesSent         MessageLimit[]
+  feedPreferences      FeedPreference?
+  
+  @@index([email])
+  @@index([accountType])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  device    String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============================================
+// USER PROFILES
+// ============================================
+
+model UserProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  avatar    String?
+  bio       String?
+  location  String?
+  website   String?
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialLinks SocialLink[]
+}
+
+model SocialLink {
+  id        String @id @default(uuid())
+  profileId String
+  platform  String // twitter, linkedin, github, etc.
+  url       String
+
+  profile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, platform])
+}
+
+model FounderProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  tagline          String?  @db.VarChar(50)
+  lookingForFunding    Boolean  @default(false)
+  lookingForCofounder  Boolean  @default(false)
+  lookingForFeedback   Boolean  @default(true)
+  previousVentures String?
+  education        String?
+  skills           String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fundraisingDetails FundraisingDetails?
+}
+
+model FundraisingDetails {
+  id        String   @id @default(uuid())
+  founderId String   @unique
+  stage     String   // pre-seed, seed, series-a, etc.
+  amount    Int?     // Amount in USD
+  industry  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  founderProfile FounderProfile @relation(fields: [founderId], references: [id], onDelete: Cascade)
+}
+
+model InvestorProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  firm        String?
+  thesis      String?  @db.Text
+  thesisVideo String?  // Video URL for investment thesis
+  checkSizeMin Int?    // In USD
+  checkSizeMax Int?
+  stages      String[] // pre-seed, seed, series-a, etc.
+  industries  String[]
+  geographies String[]
+  isPublicMode Boolean @default(false) // Private by default per spec
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolio Portfolio[]
+}
+
+model Portfolio {
+  id                String @id @default(uuid())
+  investorProfileId String
+  companyName       String
+  companyUrl        String?
+  investmentYear    Int?
+
+  investorProfile InvestorProfile @relation(fields: [investorProfileId], references: [id], onDelete: Cascade)
+}
+
+model BuilderProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  skills           String[] // frontend, backend, design, marketing, etc.
+  portfolioUrls    String[]
+  availability     String   @default("part-time") // full-time, part-time, advising
+  lookingForProject Boolean @default(true)
+  industryInterests String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// INVESTOR VERIFICATION
+// ============================================
+
+model InvestorVerification {
+  id           String             @id @default(uuid())
+  userId       String             @unique
+  linkedinUrl  String?
+  proofUrl     String?            // Link to Crunchbase, AngelList, etc.
+  proofDocument String?           // Uploaded document
+  status       VerificationStatus @default(PENDING)
+  reviewerNotes String?
+  reviewedAt   DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+// ============================================
+// VIDEOS & CONTENT
+// ============================================
+
+model Video {
+  id          String          @id @default(uuid())
+  userId      String
+  videoUrl    String
+  thumbnailUrl String?
+  type        VideoType
+  visibility  VideoVisibility @default(PUBLIC)
+  isPinned    Boolean         @default(false)
+  caption     String?         @db.Text
+  duration    Int             // In seconds
+  tags        String[]
+  qualityScore Int?           @default(0) // AI-assessed quality 0-100
+  viewCount   Int             @default(0)
+  likeCount   Int             @default(0)
+  commentCount Int            @default(0)
+  shareCount  Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transcript VideoTranscript?
+  analytics  VideoAnalytics?
+  comments   Comment[]
+  likes      Like[]
+  saves      Save[]
+  shares     Share[]
+  views      VideoView[]
+  reports    ContentReport[]
+  expressInterests ExpressInterest[]
+
+  @@index([userId])
+  @@index([type])
+  @@index([visibility])
+  @@index([isPinned])
+  @@index([createdAt])
+}
+
+model VideoTranscript {
+  id        String   @id @default(uuid())
+  videoId   String   @unique
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([text(ops: raw("gin_trgm_ops"))], type: Gin)
+}
+
+model VideoAnalytics {
+  id                 String   @id @default(uuid())
+  videoId            String   @unique
+  totalViews         Int      @default(0)
+  uniqueViews        Int      @default(0)
+  investorViews      Int      @default(0)
+  founderViews       Int      @default(0)
+  builderViews       Int      @default(0)
+  averageWatchTime   Float    @default(0) // In seconds
+  completionRate     Float    @default(0) // Percentage
+  replayRate         Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}
+
+model VideoView {
+  id         String   @id @default(uuid())
+  videoId    String
+  viewerId   String
+  watchTime  Int      @default(0) // In seconds
+  completed  Boolean  @default(false)
+  replays    Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  video  Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  viewer User  @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, viewerId])
+  @@index([videoId])
+  @@index([viewerId])
+}
+
+// ============================================
+// ENGAGEMENT
+// ============================================
+
+model Like {
+  id        String   @id @default(uuid())
+  videoId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+  @@index([videoId])
+  @@index([userId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  videoId   String
+  userId    String
+  content   String   @db.Text
+  parentId  String?  // For threaded replies
+  isHidden  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  video   Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([videoId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Save {
+  id        String   @id @default(uuid())
+  videoId   String
+  userId    String
+  listId    String?  // Optional save list
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  list  SaveList? @relation(fields: [listId], references: [id])
+
+  @@unique([videoId, userId])
+  @@index([userId])
+}
+
+model SaveList {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  saves Save[]
+
+  @@unique([userId, name])
+}
+
+model Share {
+  id        String   @id @default(uuid())
+  videoId   String
+  userId    String
+  platform  String   // internal, twitter, linkedin, etc.
+  createdAt DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// ============================================
+// EXPRESS INTEREST (Investor -> Founder)
+// ============================================
+
+model ExpressInterest {
+  id         String   @id @default(uuid())
+  investorId String
+  founderId  String
+  videoId    String
+  status     String   @default("pending") // pending, accepted, declined
+  message    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  investor User  @relation("investor", fields: [investorId], references: [id], onDelete: Cascade)
+  founder  User  @relation("founder", fields: [founderId], references: [id], onDelete: Cascade)
+  video    Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([investorId, founderId, videoId])
+  @@index([founderId, status])
+}
+
+model ProfileReveal {
+  id         String   @id @default(uuid())
+  investorId String
+  founderId  String
+  revealedAt DateTime @default(now())
+
+  investor User @relation("revealedInvestor", fields: [investorId], references: [id], onDelete: Cascade)
+  founder  User @relation("revealedToFounder", fields: [founderId], references: [id], onDelete: Cascade)
+
+  @@unique([investorId, founderId])
+}
+
+// ============================================
+// MESSAGING
+// ============================================
+
+model Conversation {
+  id           String             @id @default(uuid())
+  participant1Id String
+  participant2Id String
+  status       ConversationStatus @default(ACTIVE)
+  isRevealed   Boolean            @default(true) // For investor privacy
+  lastMessageAt DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  participant1 User      @relation("participant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2 User      @relation("participant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  messages     Message[]
+
+  @@unique([participant1Id, participant2Id])
+  @@index([participant1Id])
+  @@index([participant2Id])
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String   @db.Text
+  type           String   @default("text") // text, image, video, document
+  attachmentUrl  String?
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model MessageLimit {
+  id        String   @id @default(uuid())
+  userId    String
+  period    String   // monthly
+  count     Int      @default(0)
+  resetsAt  DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+}
+
+// ============================================
+// MODERATION
+// ============================================
+
+model ContentReport {
+  id         String         @id @default(uuid())
+  reporterId String
+  videoId    String
+  category   ReportCategory
+  details    String?
+  status     String         @default("pending") // pending, reviewed, dismissed
+  reviewedAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  reporter User  @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  video    Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@index([status])
+}
+
+model ContentFlag {
+  id        String   @id @default(uuid())
+  videoId   String
+  flagType  String   // explicit, violence, hate, copyright
+  severity  String   // low, medium, high
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([videoId])
+}
+
+model ModerationActionRecord {
+  id        String           @id @default(uuid())
+  userId    String
+  action    ModerationAction
+  reason    String
+  expiresAt DateTime?        // For temporary bans
+  createdAt DateTime         @default(now())
+
+  user User @relation("moderatedUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// SUBSCRIPTIONS & PAYMENTS
+// ============================================
+
+model Subscription {
+  id               String           @id @default(uuid())
+  userId           String           @unique
+  tier             SubscriptionTier @default(FREE)
+  stripeCustomerId String?
+  stripeSubId      String?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  canceledAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tier])
+}
+
+model FeaturedContent {
+  id        String   @id @default(uuid())
+  videoId   String
+  startsAt  DateTime
+  expiresAt DateTime
+  tier      String   // basic, premium
+  createdAt DateTime @default(now())
+
+  @@index([startsAt, expiresAt])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String               @id @default(uuid())
+  userId    String
+  type      String               // express_interest, new_comment, trending, etc.
+  priority  NotificationPriority @default(MEDIUM)
+  title     String
+  body      String
+  data      Json?                // Additional data as JSON
+  read      Boolean              @default(false)
+  createdAt DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model NotificationPreference {
+  id           String  @id @default(uuid())
+  userId       String
+  type         String  // Same as Notification.type
+  pushEnabled  Boolean @default(true)
+  emailEnabled Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+// ============================================
+// FEED & PREFERENCES
+// ============================================
+
+model FeedPreference {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  industries        String[]
+  stages            String[]
+  notifyOnMatches   Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// SEARCH & HISTORY
+// ============================================
+
+model SearchHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  query     String
+  filters   Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================
+// ONBOARDING & ACCOUNT MANAGEMENT
+// ============================================
+
+model OnboardingProgress {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  step        Int      @default(0)
+  completed   Boolean  @default(false)
+  data        Json?    // Store onboarding data
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AccountTypeChange {
+  id        String      @id @default(uuid())
+  userId    String
+  fromType  AccountType
+  toType    AccountType
+  changedAt DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

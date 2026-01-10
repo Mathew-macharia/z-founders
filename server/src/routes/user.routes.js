@@ -1,0 +1,444 @@
+const express = require('express');
+const prisma = require('../config/database');
+const { asyncHandler } = require('../middleware/error.middleware');
+const { authenticate, requireAccountType } = require('../middleware/auth.middleware');
+
+const router = express.Router();
+
+/**
+ * GET /api/users/:id
+ * Get user profile by ID
+ */
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+        where: { id },
+        include: {
+            profile: {
+                include: { socialLinks: true }
+            },
+            founderProfile: {
+                include: { fundraisingDetails: true }
+            },
+            investorProfile: req.user.accountType === 'INVESTOR' || id === req.user.id ? {
+                include: { portfolio: true }
+            } : false,
+            builderProfile: true,
+            videos: {
+                where: {
+                    OR: [
+                        { visibility: 'PUBLIC' },
+                        ...(req.user.accountType === 'INVESTOR' ? [{ visibility: 'INVESTORS_ONLY' }] : []),
+                        ...(req.user.accountType !== 'INVESTOR' && req.user.accountType !== 'LURKER'
+                            ? [{ visibility: 'COMMUNITY' }] : []),
+                        { userId: req.user.id }
+                    ]
+                },
+                orderBy: [
+                    { isPinned: 'desc' },
+                    { createdAt: 'desc' }
+                ],
+                take: 20
+            },
+            _count: {
+                select: {
+                    followers: true,
+                    following: true,
+                    videos: true
+                }
+            }
+        }
+    });
+
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if investor profile should be hidden
+    if (user.accountType === 'INVESTOR' &&
+        user.investorProfile &&
+        !user.investorProfile.isPublicMode &&
+        id !== req.user.id) {
+        // Check if there's a profile reveal
+        const reveal = await prisma.profileReveal.findUnique({
+            where: {
+                investorId_founderId: {
+                    investorId: id,
+                    founderId: req.user.id
+                }
+            }
+        });
+
+        if (!reveal) {
+            // Hide detailed investor info
+            user.investorProfile = {
+                firm: user.investorProfile.firm,
+                stages: user.investorProfile.stages,
+                // Hide other details
+            };
+        }
+    }
+
+    // Check if current user follows this user
+    const isFollowing = await prisma.follow.findUnique({
+        where: {
+            followerId_followingId: {
+                followerId: req.user.id,
+                followingId: id
+            }
+        }
+    });
+
+    res.json({
+        user: {
+            ...user,
+            passwordHash: undefined
+        },
+        isFollowing: !!isFollowing,
+        isOwnProfile: id === req.user.id
+    });
+}));
+
+/**
+ * PATCH /api/users/:id
+ * Update user profile
+ */
+router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (id !== req.user.id) {
+        return res.status(403).json({ error: 'Cannot update other users' });
+    }
+
+    const { profile, founderProfile, investorProfile, builderProfile, socialLinks } = req.body;
+
+    // Update base profile
+    if (profile) {
+        await prisma.userProfile.update({
+            where: { userId: id },
+            data: {
+                avatar: profile.avatar,
+                bio: profile.bio,
+                location: profile.location,
+                website: profile.website,
+                isPublic: profile.isPublic
+            }
+        });
+    }
+
+    // Update type-specific profiles
+    if (founderProfile && req.user.accountType === 'FOUNDER') {
+        await prisma.founderProfile.upsert({
+            where: { userId: id },
+            create: {
+                userId: id,
+                ...founderProfile
+            },
+            update: founderProfile
+        });
+
+        // Update fundraising details if provided
+        if (founderProfile.fundraisingDetails) {
+            const fp = await prisma.founderProfile.findUnique({ where: { userId: id } });
+            await prisma.fundraisingDetails.upsert({
+                where: { founderId: fp.id },
+                create: {
+                    founderId: fp.id,
+                    ...founderProfile.fundraisingDetails
+                },
+                update: founderProfile.fundraisingDetails
+            });
+        }
+    }
+
+    if (investorProfile && req.user.accountType === 'INVESTOR') {
+        await prisma.investorProfile.upsert({
+            where: { userId: id },
+            create: {
+                userId: id,
+                ...investorProfile
+            },
+            update: investorProfile
+        });
+    }
+
+    if (builderProfile && req.user.accountType === 'BUILDER') {
+        await prisma.builderProfile.upsert({
+            where: { userId: id },
+            create: {
+                userId: id,
+                ...builderProfile
+            },
+            update: builderProfile
+        });
+    }
+
+    // Update social links
+    if (socialLinks) {
+        const userProfile = await prisma.userProfile.findUnique({ where: { userId: id } });
+
+        // Delete existing and recreate
+        await prisma.socialLink.deleteMany({ where: { profileId: userProfile.id } });
+
+        for (const link of socialLinks) {
+            await prisma.socialLink.create({
+                data: {
+                    profileId: userProfile.id,
+                    platform: link.platform,
+                    url: link.url
+                }
+            });
+        }
+    }
+
+    // Return updated user
+    const updatedUser = await prisma.user.findUnique({
+        where: { id },
+        include: {
+            profile: { include: { socialLinks: true } },
+            founderProfile: { include: { fundraisingDetails: true } },
+            investorProfile: { include: { portfolio: true } },
+            builderProfile: true
+        }
+    });
+
+    res.json({ user: updatedUser });
+}));
+
+/**
+ * POST /api/users/switch-type
+ * Switch account type (builder <-> founder)
+ */
+router.post('/switch-type', authenticate, asyncHandler(async (req, res) => {
+    const { newType } = req.body;
+
+    // Validate allowed switches
+    const allowedSwitches = {
+        'FOUNDER': ['BUILDER'],
+        'BUILDER': ['FOUNDER'],
+        'LURKER': ['FOUNDER', 'BUILDER', 'INVESTOR']
+    };
+
+    const allowed = allowedSwitches[req.user.accountType];
+    if (!allowed || !allowed.includes(newType)) {
+        return res.status(400).json({
+            error: 'Invalid account type switch',
+            allowed: allowed || []
+        });
+    }
+
+    // Check cooldown (30 days)
+    const recentChange = await prisma.accountTypeChange.findFirst({
+        where: {
+            userId: req.user.id,
+            changedAt: {
+                gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+            }
+        }
+    });
+
+    if (recentChange) {
+        return res.status(400).json({
+            error: 'Can only switch account type once per 30 days',
+            nextAvailable: new Date(recentChange.changedAt.getTime() + 30 * 24 * 60 * 60 * 1000)
+        });
+    }
+
+    // Perform switch
+    await prisma.$transaction(async (tx) => {
+        // Update user type
+        await tx.user.update({
+            where: { id: req.user.id },
+            data: { accountType: newType }
+        });
+
+        // Log the change
+        await tx.accountTypeChange.create({
+            data: {
+                userId: req.user.id,
+                fromType: req.user.accountType,
+                toType: newType
+            }
+        });
+
+        // Create new type-specific profile
+        if (newType === 'FOUNDER') {
+            await tx.founderProfile.upsert({
+                where: { userId: req.user.id },
+                create: { userId: req.user.id },
+                update: {}
+            });
+        } else if (newType === 'BUILDER') {
+            await tx.builderProfile.upsert({
+                where: { userId: req.user.id },
+                create: { userId: req.user.id },
+                update: {}
+            });
+        } else if (newType === 'INVESTOR') {
+            await tx.investorProfile.upsert({
+                where: { userId: req.user.id },
+                create: { userId: req.user.id },
+                update: {}
+            });
+            await tx.investorVerification.upsert({
+                where: { userId: req.user.id },
+                create: { userId: req.user.id, status: 'PENDING' },
+                update: { status: 'PENDING' }
+            });
+        }
+    });
+
+    res.json({
+        message: 'Account type switched successfully',
+        newType,
+        requiresVerification: newType === 'INVESTOR'
+    });
+}));
+
+/**
+ * POST /api/users/:id/follow
+ * Follow a user
+ */
+router.post('/:id/follow', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (id === req.user.id) {
+        return res.status(400).json({ error: 'Cannot follow yourself' });
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if investor is private
+    if (targetUser.accountType === 'INVESTOR') {
+        const investorProfile = await prisma.investorProfile.findUnique({
+            where: { userId: id }
+        });
+
+        if (investorProfile && !investorProfile.isPublicMode) {
+            return res.status(403).json({ error: 'Cannot follow private investor profiles' });
+        }
+    }
+
+    await prisma.follow.upsert({
+        where: {
+            followerId_followingId: {
+                followerId: req.user.id,
+                followingId: id
+            }
+        },
+        create: {
+            followerId: req.user.id,
+            followingId: id
+        },
+        update: {}
+    });
+
+    // Create notification
+    await prisma.notification.create({
+        data: {
+            userId: id,
+            type: 'new_follower',
+            priority: 'MEDIUM',
+            title: 'New Follower',
+            body: `${req.user.email} started following you`,
+            data: { followerId: req.user.id }
+        }
+    });
+
+    res.json({ message: 'Following user' });
+}));
+
+/**
+ * DELETE /api/users/:id/follow
+ * Unfollow a user
+ */
+router.delete('/:id/follow', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    await prisma.follow.deleteMany({
+        where: {
+            followerId: req.user.id,
+            followingId: id
+        }
+    });
+
+    res.json({ message: 'Unfollowed user' });
+}));
+
+/**
+ * GET /api/users/:id/followers
+ * Get user's followers
+ */
+router.get('/:id/followers', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    const followers = await prisma.follow.findMany({
+        where: { followingId: id },
+        include: {
+            follower: {
+                include: { profile: true }
+            }
+        },
+        skip: (page - 1) * limit,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+    });
+
+    const total = await prisma.follow.count({ where: { followingId: id } });
+
+    res.json({
+        followers: followers.map(f => ({
+            ...f.follower,
+            passwordHash: undefined
+        })),
+        pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            pages: Math.ceil(total / limit)
+        }
+    });
+}));
+
+/**
+ * GET /api/users/:id/following
+ * Get users this user follows
+ */
+router.get('/:id/following', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    const following = await prisma.follow.findMany({
+        where: { followerId: id },
+        include: {
+            following: {
+                include: { profile: true }
+            }
+        },
+        skip: (page - 1) * limit,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+    });
+
+    const total = await prisma.follow.count({ where: { followerId: id } });
+
+    res.json({
+        following: following.map(f => ({
+            ...f.following,
+            passwordHash: undefined
+        })),
+        pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            pages: Math.ceil(total / limit)
+        }
+    });
+}));
+
+module.exports = router;
