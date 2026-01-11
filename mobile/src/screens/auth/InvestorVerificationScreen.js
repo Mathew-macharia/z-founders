@@ -32,7 +32,11 @@ const InvestorVerificationScreen = ({ navigation }) => {
 
             <Button
                 title="Start Verification"
-                onPress={() => { }}
+                onPress={() => {
+                    // TODO: Implement actual verification flow (LinkedIn/Upload)
+                    alert('Verification request started! Please check your email for next steps.');
+                    navigation.replace('Main');
+                }}
                 fullWidth
                 style={styles.button}
             />

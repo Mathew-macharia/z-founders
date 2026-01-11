@@ -195,15 +195,127 @@ router.post('/verify-email', asyncHandler(async (req, res) => {
 }));
 
 /**
+ * POST /api/auth/change-password
+ * Change current user password
+ */
+router.post('/change-password', authenticate, asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current and new password required' });
+    }
+
+    if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: req.user.id }
+    });
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+        return res.status(401).json({ error: 'Incorrect current password' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+        where: { id: req.user.id },
+        data: { passwordHash }
+    });
+
+    res.json({ message: 'Password updated successfully' });
+}));
+
+/**
  * POST /api/auth/forgot-password
- * Request password reset (placeholder)
+ * Request password reset
  */
 router.post('/forgot-password', asyncHandler(async (req, res) => {
     const { email } = req.body;
+    const crypto = require('crypto');
+    const { sendEmail } = require('../services/email.service');
 
-    // TODO: Implement password reset email
+    const user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase().trim() }
+    });
+
+    if (!user) {
+        // Return success even if user not found to prevent enumeration
+        return res.json({ message: 'If an account exists with this email, a reset link will be sent' });
+    }
+
+    // Generate token
+    const token = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: expiresAt
+        }
+    });
+
+    // Send email
+    const resetUrl = `https://zfounders.com/reset-password?token=${token}`;
+    const message = `
+        <h1>Password Reset Request</h1>
+        <p>You requested a password reset for your Z Founders account.</p>
+        <p>Please click the link below to reset your password:</p>
+        <a href="${resetUrl}">Reset Password</a>
+        <p>This link will expire in 1 hour.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+    `;
+
+    await sendEmail({
+        to: user.email,
+        subject: 'Z Founders Password Reset',
+        html: message
+    });
 
     res.json({ message: 'If an account exists with this email, a reset link will be sent' });
+}));
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password with token
+ */
+router.post('/reset-password', asyncHandler(async (req, res) => {
+    const { token, newPassword } = req.body;
+    const crypto = require('crypto');
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await prisma.user.findFirst({
+        where: {
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { gt: new Date() }
+        }
+    });
+
+    if (!user) {
+        return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+
+    if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            passwordHash,
+            resetPasswordToken: null,
+            resetPasswordExpires: null
+        }
+    });
+
+    res.json({ message: 'Password reset successfully' });
 }));
 
 /**

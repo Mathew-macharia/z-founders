@@ -132,7 +132,7 @@ const OnboardingScreen = ({ navigation, route }) => {
         firm: '',
         title: '',
         thesis: '',
-        isPublicMode: true,
+        isPublicMode: false,
     });
 
     const updateField = (field, value) => {

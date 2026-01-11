@@ -9,10 +9,28 @@ const router = express.Router();
  * Check message limit for user
  */
 const checkMessageLimit = async (userId, targetAccountType, userSubscription) => {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { investorVerification: true }
+    });
 
-    // Investors have unlimited messaging
+    // CRITICAL: Block Lurkers completely
+    if (user.accountType === 'LURKER') {
+        return {
+            allowed: false,
+            reason: 'Lurkers cannot send messages. Please upgrade your account.'
+        };
+    }
+
+    // CRITICAL: Block Pending Investors
     if (user.accountType === 'INVESTOR') {
+        if (user.investorVerification?.status !== 'APPROVED') {
+            return {
+                allowed: false,
+                reason: 'You must be a verified investor to send messages.'
+            };
+        }
+        // Verified investors have unlimited messaging
         return { allowed: true };
     }
 
@@ -320,6 +338,42 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
         return res.status(404).json({ error: 'Recipient not found' });
     }
 
+    // CHECK 1: BLOCKING
+    const blockCheck = await prisma.block.findFirst({
+        where: {
+            OR: [
+                { blockerId: recipientId, blockedId: req.user.id }, // Recipient blocked me
+                { blockerId: req.user.id, blockedId: recipientId }  // I blocked recipient
+            ]
+        }
+    });
+
+    if (blockCheck) {
+        return res.status(403).json({ error: 'You cannot message this user' });
+    }
+
+    // CHECK 2: PRIVACY (Messages from everyone)
+    if (recipient.profile?.allowMessagesFromEveryone === false) {
+        // Must be following to message
+        const isFollowing = await prisma.follow.findUnique({
+            where: {
+                followerId_followingId: {
+                    followerId: req.user.id,
+                    followingId: recipientId
+                }
+            }
+        });
+
+        // Also allow if there is an existing CONVERSATION (that was previously accepted)
+        // But for new messages, we usually rely on "isFollowing" or "isConnected"
+        if (!isFollowing) {
+            // Optional: Allow if they are connected in some other way (e.g. accepted match)
+            // For now, strict follow check if privacy is on
+            return res.status(403).json({ error: 'This user only accepts messages from people they know' });
+        }
+    }
+
+    // CHECK 3: LIMITS
     // Check message limits
     const limitCheck = await checkMessageLimit(
         req.user.id,

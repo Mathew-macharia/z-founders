@@ -46,6 +46,18 @@ const PLANS = {
                 '⭐ Priority support',
                 '🏷️ Verified badge',
             ]
+        },
+        {
+            id: 'STEALTH_MODE',
+            name: 'Stealth Mode',
+            price: 29,
+            features: [
+                'Everything in Founder Pro',
+                '🕵️‍♂️ Hidden from search/browse',
+                '🔒 Private pitch links',
+                '🛡️ Control who sees you',
+                '✨ Best for competitive spaces'
+            ]
         }
     ],
     BUILDER: [
@@ -243,13 +255,50 @@ const SubscriptionScreen = ({ navigation }) => {
                         </Text>
                     </View>
 
-                    {plans.map((plan) => (
-                        <PlanCard
-                            key={plan.id}
-                            plan={plan}
-                            isCurrentPlan={currentPlan === plan.id || (!currentPlan && plan.id === 'FREE')}
-                        />
-                    ))}
+                    {accountType === 'LURKER' ? (
+                        <View style={styles.planCard}>
+                            <LinearGradient
+                                colors={[colors.primary[500], colors.primary[600]]}
+                                style={styles.popularBadge}
+                            >
+                                <Text style={styles.popularText}>Start Your Journey</Text>
+                            </LinearGradient>
+
+                            <Text style={styles.planName}>Choose Your Role</Text>
+                            <Text style={[styles.period, { marginBottom: 16 }]}>
+                                Unlock potential by selecting your path
+                            </Text>
+
+                            <View style={styles.features}>
+                                <View style={styles.featureItem}>
+                                    <Ionicons name="rocket" size={18} color={colors.primary[500]} />
+                                    <Text style={styles.featureText}>Founder: Raise funding & build</Text>
+                                </View>
+                                <View style={styles.featureItem}>
+                                    <Ionicons name="trending-up" size={18} color={colors.success.main} />
+                                    <Text style={styles.featureText}>Investor: Find next unicorn</Text>
+                                </View>
+                                <View style={styles.featureItem}>
+                                    <Ionicons name="construct" size={18} color={colors.warning.main} />
+                                    <Text style={styles.featureText}>Builder: Join a startup</Text>
+                                </View>
+                            </View>
+
+                            <Button
+                                title="Complete Profile"
+                                onPress={() => navigation.navigate('AccountType')}
+                                fullWidth
+                            />
+                        </View>
+                    ) : (
+                        plans.map((plan) => (
+                            <PlanCard
+                                key={plan.id}
+                                plan={plan}
+                                isCurrentPlan={currentPlan === plan.id || (!currentPlan && plan.id === 'FREE')}
+                            />
+                        ))
+                    )}
 
                     {currentPlan && currentPlan !== 'FREE' && (
                         <TouchableOpacity style={styles.manageButton} onPress={handleCancel}>

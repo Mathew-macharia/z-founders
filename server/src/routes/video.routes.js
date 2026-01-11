@@ -321,6 +321,17 @@ router.post('/:id/pin', authenticate, requireAccountType('FOUNDER'), asyncHandle
 router.post('/:id/like', authenticate, asyncHandler(async (req, res) => {
     const { id } = req.params;
 
+    // CRITICAL: Block permissions
+    if (req.user.accountType === 'LURKER') {
+        return res.status(403).json({ error: 'Lurkers cannot like videos. Please upgrade.' });
+    }
+    if (req.user.accountType === 'INVESTOR') {
+        const verification = await prisma.investorVerification.findUnique({ where: { userId: req.user.id } });
+        if (verification?.status !== 'APPROVED') {
+            return res.status(403).json({ error: 'Verify your profile to like videos.' });
+        }
+    }
+
     const video = await prisma.video.findUnique({ where: { id } });
     if (!video) {
         return res.status(404).json({ error: 'Video not found' });
@@ -404,6 +415,17 @@ router.post('/:id/comment', authenticate, asyncHandler(async (req, res) => {
 
     if (!content?.trim()) {
         return res.status(400).json({ error: 'Comment content required' });
+    }
+
+    // CRITICAL: Block permissions
+    if (req.user.accountType === 'LURKER') {
+        return res.status(403).json({ error: 'Lurkers cannot comment. Please upgrade.' });
+    }
+    if (req.user.accountType === 'INVESTOR') {
+        const verification = await prisma.investorVerification.findUnique({ where: { userId: req.user.id } });
+        if (verification?.status !== 'APPROVED') {
+            return res.status(403).json({ error: 'Verify your profile to comment.' });
+        }
     }
 
     const video = await prisma.video.findUnique({

@@ -1,0 +1,850 @@
+i had a client who contracted me to build them a professional appp here is exactly what they needed:
+
+
+# **PRODUCT STRATEGY & DECISIONS**
+## *Board-Level Product Design Document*
+
+---
+
+## **1. CORE USER TYPES & ACCOUNT STRUCTURE**
+
+### **Decision: Three Account Types (Not Two)**
+
+**Why:** You need a third category for the most valuable users.
+
+1. **Founders** - People with ideas seeking feedback/cofounders/funding
+2. **Builders** - Technical/business talent seeking projects to join
+3. **Investors** - Angels, VCs, scouts looking for deals
+
+**Reasoning:**
+- "Founders" and "Cofounders" aren't the same
+- Someone might want to join a startup but not lead one
+- Builders provide critical feedback AND are potential team members
+- This creates network effects: Founders ↔ Builders ↔ Investors
+
+### **Sign-Up Flow Decision:**
+
+**Step 1:** "What brings you here?"
+- 🚀 I have an idea (Founder)
+- 🛠️ I want to build something (Builder)  
+- 💰 I invest in startups (Investor)
+- 👀 Just browsing (Lurker - read-only initially)
+
+**Step 2:** Verification (different for each)
+- **Founders/Builders:** Email verification only (low friction)
+- **Investors:** 
+  - Email verification
+  - LinkedIn connection OR
+  - Proof of investment (Crunchbase profile, AngelList, past investments)
+  - Manual approval for first 6 months (prevent fake investors)
+
+**Decision: Investors MUST verify** to prevent:
+- Founders wasting time on fake investors
+- Data harvesting
+- Competitors posing as investors
+- Spam
+
+---
+
+## **2. CONTENT VISIBILITY & PRIVACY CONTROLS**
+
+### **For Founders:**
+
+**Decision: Three-Tier Visibility System**
+
+When posting ANY content, founders choose:
+
+**Tier 1: "Public"** 🌍
+- Visible to everyone (founders, builders, investors, logged-out users)
+- Appears in public feed
+- Can be shared externally
+- Indexed by search engines eventually
+
+**Tier 2: "Community Only"** 👥
+- Visible only to verified founders + builders
+- NOT visible to investors
+- Use case: Early-stage ideas, getting peer feedback before investor scrutiny
+- Can upgrade to Public or Investors later
+
+**Tier 3: "Investors Only"** 💼
+- Visible only to verified investors
+- Use case: Actively fundraising, don't want idea stolen by other founders
+- Premium feature (paid) or unlocks after account age/engagement threshold
+
+**Decision: Default visibility = "Public"**
+- Maximizes engagement for new users
+- Can always change later
+- Warning shown: "This will be visible to everyone including investors and competitors"
+
+### **Special Case: The Pinned Pitch**
+
+**Rule: Your first pitch video defaults to "Public"**
+- This is your profile anchor
+- Changing it to private defeats the platform purpose
+- If you want to fundraise privately, use "Investors Only" tier (premium)
+
+**Decision: Allow ONE pinned pitch at a time**
+- Not unlimited pins
+- Forces clarity on what you're building NOW
+- Can swap the pinned pitch anytime
+- Old pitches become regular posts in your feed
+
+---
+
+### **For Investors:**
+
+**Decision: Two Account Modes**
+
+**Public Investor Profile** 🔓
+- Profile visible to all users
+- Can create content (investment thesis, founder advice, etc.)
+- Can comment publicly
+- Can be followed
+- Appears in "Investors on the platform" directory
+- Benefits: Brand building, deal flow, thought leadership
+
+**Private Investor Profile** 🔒
+- Profile hidden from browse/search
+- Can still view all founder content
+- Can DM founders (they see your profile when you message)
+- Can save/bookmark privately
+- Cannot comment publicly (would reveal presence)
+- Cannot be followed
+- Does NOT appear in analytics ("X investors viewed")
+
+**Decision: Default = Private for investors**
+- Protects their sourcing strategy
+- Prevents spam from founders
+- They can opt into public later
+- Most professional investors prefer stealth mode
+
+**Edge Case: What if private investor comments?**
+- System prompts: "Commenting will make your profile visible to this founder. Continue?"
+- One-time choice per founder: Reveal yourself or stay anonymous
+- If revealed, only THAT founder sees your profile, not everyone
+
+---
+
+## **3. CONTENT STRATEGY & TYPES**
+
+### **Decision: Four Content Categories**
+
+**1. Pitch (Required, Pinned)** 📍
+- 30-90 seconds
+- One per account (can replace)
+- Always pinned to top of profile
+- Template/prompts provided:
+  - Problem you're solving
+  - Your solution
+  - What makes it different
+  - What you're looking for (feedback/cofounder/funding)
+
+**2. Updates** 📈
+- Progress videos (15-60 sec)
+- Product demos
+- User testimonials
+- Metrics/traction
+- Unlimited posts
+- Examples: "We got our first 100 users!", "New feature demo", "Customer interview"
+
+**3. Asks** 🙋
+- Specific questions to community
+- 15-30 seconds
+- "Should I pivot to B2B?", "Which landing page is better?", "Roast my pricing"
+- Higher engagement rate (people love giving advice)
+
+**4. Wins & Losses** 🎯
+- Celebrating milestones OR transparent failures
+- 30-60 seconds  
+- "We just got funded!", "We shipped!", "We're pivoting - here's why", "We're shutting down - lessons learned"
+- This category is GOLD for authenticity and learning
+
+**Decision: Builders and Investors can ONLY post "Updates" and "Asks"**
+- No pitch videos (they're not building something)
+- Updates = investment thesis, founder advice, market insights
+- Asks = "Looking for fintech founders", "Who's building in AI?"
+
+---
+
+## **4. FEED ALGORITHM & DISCOVERY**
+
+### **Decision: Multiple Feed Tabs (Not One Combined Feed)**
+
+**Home Feed** (Default)
+- Personalized algorithm
+- Mix of: people you follow + recommended content
+- Weighted by: engagement, recency, your interests
+- Shows ALL content types from all user types
+
+**Pitches** 🚀
+- ONLY pinned pitch videos
+- Pure discovery mode for new ideas
+- Filters: Industry, stage, location, "looking for" (cofounder/funding/feedback)
+- This is where investors spend most time
+
+**Following** 👥
+- Chronological feed of people you follow
+- No algorithm
+- Never miss updates from founders you care about
+
+**Trending** 🔥
+- Most engaging content last 24hrs/7days
+- Great for lurkers and new users
+- Surfacing breakout ideas
+
+**For You** (Investors Only) 💎
+- AI-curated pitches based on:
+  - Their stated investment thesis
+  - Past engagement (what they liked/saved)
+  - Their portfolio (if connected)
+  - Investment stage preference
+
+### **Decision: Separate "Investor Mode" Toggle**
+
+Founders can toggle ON "Looking for funding"
+- This surfaces their pitch in investor feeds more
+- Adds a 💰 badge on their profile
+- Signals they're actively fundraising
+- Can specify: stage (pre-seed, seed, etc.), amount raising, industry
+
+**Why this matters:**
+- Not all founders want investor attention (maybe just feedback/cofounders)
+- Reduces noise for investors (only see serious fundraisers)
+- Founders control when they're "market ready"
+
+---
+
+## **5. ENGAGEMENT MECHANICS**
+
+### **Analytics Shown to Founders:**
+
+**On Each Video:**
+- Total views
+- Likes
+- Comments
+- Shares
+- Saves/bookmarks
+
+**Premium Analytics:** 📊
+- **Investor attention:**
+  - "X verified investors viewed"
+  - Which investors (if public profile OR if they engaged)
+  - Average watch time
+  - Replay rate
+- **Audience breakdown:**
+  - Founders vs Builders vs Investors ratio
+  - Geographic distribution
+  - Industry interests of viewers
+  
+**Decision: Basic analytics free, detailed analytics paid**
+- Free tier: Total views, likes, comments (enough to be engaging)
+- Paid tier: Investor-specific data, demographics, engagement depth
+- Pricing: $10-15/month for founders actively fundraising
+
+### **For Investors:**
+
+**Their View:**
+- Can see all founder analytics on any pitch they watch
+- No restrictions (they're the customer here)
+- Can filter pitches by traction: "Show me pitches with 500+ views", "10+ investor saves"
+
+**Decision: Investors see EVERYTHING, founders see limited data**
+- Power dynamic: Investors are the scarce resource
+- Incentivizes founder paid upgrades
+- Industry standard (Crunchbase, PitchBook work this way)
+
+---
+
+## **6. INTERACTION OPTIONS**
+
+### **For Everyone:**
+
+**Public Actions:**
+- ❤️ Like (public count)
+- 💬 Comment (public thread)
+- 🔁 Share (within platform + external)
+- ➕ Follow user
+
+**Private Actions:**
+- 🔖 Save/Bookmark (only you see it)
+- 👁️ View (tracked but private)
+- 📹 Reply with video (optional, creates thread)
+
+### **Investor-Specific Actions:**
+
+**Decision: "Express Interest" Button**
+
+When investor clicks this on a pitch:
+- Sends notification to founder: "An investor is interested! 🎉"
+- If investor is public: Shows their profile immediately
+- If investor is private: "A verified investor wants to connect. Accept?"
+  
+**If founder accepts:**
+- Unlocks DM thread
+- Investor profile revealed (just to this founder)
+- Founder can share pitch deck, financials, etc. in DM
+
+**If founder declines/ignores:**
+- Nothing happens
+- Investor can't see they were declined
+- Prevents awkwardness
+
+**Why not direct DM?**
+- Prevents investor spam to founders
+- Gives founders control
+- Creates intentionality (not just mass messaging)
+- Respects both parties' time
+
+### **Edge Case: What if investor messages first without "Express Interest"?**
+
+**Decision: Investor messages go to "Requests" folder**
+- Like Instagram message requests
+- Founder can preview message + investor profile
+- Accept or decline
+- Accepting unlocks normal DM
+- Declining is silent (investor doesn't know)
+
+---
+
+## **7. CONTENT MODERATION & SAFETY**
+
+### **Decision: Four-Layer Moderation System**
+
+**Layer 1: Automated (Pre-Upload)**
+- AI scans video for:
+  - Explicit content
+  - Violence
+  - Hate speech
+  - Copyright music (flag, don't block - music in pitches is common)
+- Blocks upload if violations detected
+- User can appeal
+
+**Layer 2: Community Reporting**
+- Report button on every video
+- Categories: Spam, Scam, Inappropriate, Stolen idea, Harassment
+- 3+ reports = automatic review queue
+
+**Layer 3: Manual Review Team**
+- Reviews flagged content within 24hrs
+- Can: Remove video, warn user, suspend account, ban
+- Appeals process
+
+**Layer 4: Investor Protection**
+- Special "Report scam fundraise" button (investors only)
+- Fast-tracked to manual review
+- Prevents platform being used for fraud
+
+### **Edge Case: Someone steals another founder's idea from the platform**
+
+**Decision: This is NOT the platform's legal responsibility**
+- Terms of Service clearly states: "Post at your own risk"
+- Recommendation in onboarding: "Don't share proprietary tech/IP in detail"
+- But provide resources: NDA templates, legal advice links
+- Can ban reported copycats, but can't prevent all theft
+- Real-world solution: This happens on YouTube, Twitter, everywhere. Not platform's fault.
+
+**Why this decision:**
+- Impossible to police
+- Would kill the platform (everyone afraid to post)
+- Founders should share vision, not patents
+- Many investors value execution over idea anyway
+
+---
+
+## **8. DIRECT MESSAGING & OUTREACH**
+
+### **Decision: Tiered Messaging System**
+
+**Founders can message:**
+- ✅ Other founders (unlimited, free)
+- ✅ Builders (unlimited, free)
+- ⚠️ Investors (3 free cold messages/month, then premium)
+
+**Investors can message:**
+- ✅ Anyone, unlimited (they're the customer)
+
+**Builders can message:**
+- ✅ Founders (unlimited)
+- ✅ Other builders (unlimited)
+- ✅ Investors (5 free/month)
+
+**Why limit founder→investor messages?**
+- Prevents spam
+- Encourages quality over quantity
+- Investors would leave if flooded
+- Premium revenue ($20/mo for unlimited)
+
+**Edge Case: What if conversation was started by investor?**
+- That thread is unlimited, both ways
+- Only COLD outreach is limited
+- Ongoing conversations never count against limits
+
+### **Message Features:**
+
+**Basic (Free):**
+- Text
+- Image attachments
+- Video attachments (max 2min)
+- Link sharing
+
+**Premium:**
+- Pitch deck upload (PDF, max 10MB)
+- Calendar integration (schedule calls)
+- Read receipts
+- Priority in investor inbox
+
+---
+
+## **9. PROFILE STRUCTURE**
+
+### **Founder Profile:**
+
+**Always Visible:**
+- Profile picture
+- Name
+- Tagline (50 chars: "Building X for Y")
+- Location
+- Pinned pitch video
+- All public posts (in grid)
+- Follower/following count
+- "Looking for" badges (💰 Funding, 🤝 Cofounder, 💬 Feedback)
+
+**Optional/Conditional:**
+- Website link
+- Social links (Twitter, LinkedIn)
+- Previous ventures
+- Education
+- Skills/expertise
+- Email (can hide)
+
+**Investor-Only Visible** (if premium):
+- Traction metrics they choose to share
+- Cap table (redacted)
+- Fundraising status
+
+### **Investor Profile:**
+
+**If Public:**
+- Profile pic
+- Name
+- Investment firm
+- Investment thesis (text or video)
+- Portfolio (linked startups)
+- Check sizes
+- Stages they invest in
+- Industries of interest
+- Notable investments
+- Content they've posted
+
+**If Private:**
+- Shows only when they engage with a founder
+- Minimal info: Name, firm, investment stage
+- No public posts
+- No portfolio listing
+
+### **Builder Profile:**
+
+- Profile pic
+- Name
+- Skills (developer, designer, marketer, etc.)
+- Portfolio (past work, GitHub, Dribbble)
+- Availability (full-time, part-time, just advising)
+- Interests (industries/problems they care about)
+- "Looking for project" toggle
+
+---
+
+## **10. SEARCH & FILTERS**
+
+### **Decision: Two Search Modes**
+
+**Quick Search** (Top bar)
+- People: Names, usernames
+- Ideas: Keywords in pitch transcripts
+- Tags: #fintech, #healthtech, etc.
+- Recent searches saved
+
+**Advanced Filters** (Dedicated page)
+
+**For finding Founders:**
+- Industry/vertical
+- Stage (idea, MVP, traction, funded)
+- Looking for (cofounder, funding, feedback)
+- Location
+- Has video demo (yes/no)
+- Engagement (min views, likes)
+- Investor interest (min investor views)
+
+**For finding Investors:**
+- Investment stage
+- Check size
+- Industry focus
+- Geography they invest in
+- Activity level (active last 7/30/90 days)
+- Public vs accepts DMs
+
+**For finding Builders:**
+- Skills (frontend, backend, design, marketing, etc.)
+- Availability
+- Location
+- Looking for projects (yes/no)
+- Industry interests
+
+---
+
+## **11. PREMIUM/MONETIZATION STRATEGY**
+
+### **Decision: Freemium Model with Three Tiers**
+
+**Free (Forever)**
+- Unlimited content posting
+- Basic analytics (views, likes, comments)
+- 3 cold investor messages/month
+- Standard support
+- All viewing features
+- Commenting/engaging
+
+**Founder Pro - $15/month or $144/year**
+- Detailed analytics (investor views, demographics, watch time)
+- Unlimited investor messages
+- Featured in weekly investor digest
+- Verified badge ✓
+- Priority support
+- Pitch deck uploads in DMs
+- Remove "Show Similar Pitches" from your videos (keeps viewers on your content)
+
+**Investor Pro - $49/month or $470/year**
+- Unlimited searches & filters
+- Save unlimited pitches to lists
+- Advanced filtering (traction metrics, funding status)
+- Early access to trending pitches
+- Monthly curated deal flow report
+- Analytics on your engagement (which pitches you've watched, patterns)
+- Request intro to founders (we facilitate warm intros)
+
+**Free for Builders** (for now)
+- We need supply
+- Can monetize later via job board, recruitment fees
+
+### **Additional Revenue Streams:**
+
+**Year 2+:**
+- Featured pitch slots ($99-299/month)
+- Promoted content for investors ($199-499/month)
+- Job board for hiring (builders)
+- Recruiting fees (if we facilitate hires)
+- Virtual pitch events/competitions (entry fees)
+- Investor syndicate fees (if we facilitate deals)
+
+---
+
+## **12. EDGE CASES & DECISIONS**
+
+### **Edge Case 1: Founder pivots completely**
+
+**Decision: Allow editing pinned pitch**
+- Can replace with new pitch video
+- Old pitch becomes regular post (auto-posted to feed)
+- Caption: "We pivoted! Here was our original idea..."
+- Shows journey, transparency builds trust
+
+### **Edge Case 2: Stealth mode startup**
+
+**Decision: Allow private accounts for founders (premium)**
+- $29/month (higher than standard premium)
+- Profile not discoverable in search/browse
+- Can still message specific investors
+- Can share unlisted link to pitch
+- Use case: Competitive spaces, enterprise sales
+
+### **Edge Case 3: Investor wants to hide which startups they viewed**
+
+**Decision: This is allowed (and default for private investors)**
+- Founders can't see which specific private investors viewed
+- Only count: "X investors viewed"
+- Public investors appear in the list
+- Encourages investors to stay on platform (safe sourcing)
+
+### **Edge Case 4: Someone fundraising on platform closes a round**
+
+**Decision: Celebrate it!**
+- Prompt founder to post "Funding Announcement" video
+- Give them animated badge: "🎉 Funded on [Platform]"
+- Feature in newsletter/social
+- Case study for marketing
+- Possibly small success fee (1-2% of round) - test this carefully
+
+### **Edge Case 5: Hate speech, trolling in comments**
+
+**Decision: Zero tolerance**
+- Auto-hide comments with slurs
+- Manual review within 1 hour
+- First offense: Warning
+- Second: 7-day suspension  
+- Third: Permanent ban
+- Build welcoming community from day 1
+
+### **Edge Case 6: Competitors creating accounts to steal ideas**
+
+**Decision: Can't prevent, but can make it harder**
+- New accounts have limited visibility (don't appear in "Trending" for 7 days)
+- Require email verification + phone verification for investors
+- Encourage founders to share vision, not IP
+- Community reporting for suspicious accounts
+- In ToS: Acknowledge risk, founder responsibility
+
+### **Edge Case 7: Investor wants founder's contact info without connecting**
+
+**Decision: No.**
+- Must go through platform "Express Interest" flow
+- Email not shown unless founder chooses to share
+- Phone never shown
+- Protects founders from harassment
+- Keeps engagement on-platform (better for us)
+
+### **Edge Case 8: Founder gets 100 "Express Interest" from investors**
+
+**Decision: Founder's problem (good one!)**
+- They can filter by investor quality
+- Batch accept/decline
+- See investor profiles before accepting
+- Premium feature: Auto-accept from certain investor types
+- This is a feature, not a bug
+
+### **Edge Case 9: Video quality is terrible (bad lighting, audio)**
+
+**Decision: Allow it, but nudge quality**
+- Upload tips shown first time
+- AI analyzes and gives quality score pre-upload
+- "Your video is dark. Want to retake?" (suggestion, not block)
+- Investors can filter by "high quality video only" (premium)
+- Authenticity > polish (especially early stage)
+
+### **Edge Case 10: Someone posts every day (spam)**
+
+**Decision: Daily post limit for free accounts**
+- Free: 3 posts/day max
+- Premium: 10 posts/day max
+- Why: Quality > quantity
+- Protects feed from spam
+- Doesn't hurt legitimate users
+
+### **Edge Case 11: Investor shares founder's private pitch externally**
+
+**Decision: Against ToS, but unenforceable**
+- Terms of Service prohibits this
+- Watermark on videos: Username + "Posted on [Platform Name]"
+- Can ban investor if caught
+- But can't prevent screenshots/screen recording
+- Founders should assume anything posted can leak
+- Disclaimer in onboarding
+
+### **Edge Case 12: Investor wants to invest but wants NDA first**
+
+**Decision: Facilitate, don't enforce**
+- Provide NDA templates in resource section
+- Can share documents in DM
+- Both parties sign outside platform
+- We don't verify or enforce legal agreements
+- Just a communication tool
+
+### **Edge Case 13: Founder gets funded by investor from platform, never mentions us**
+
+**Decision: Track it anyway**
+- Investor can report: "I invested in this founder"
+- Founder verification (we reach out)
+- Add to our "Success stories"
+- No penalty if they don't report
+- Incentivize reporting: Feature in newsletter, profile badge
+
+### **Edge Case 14: Builder joins as cofounder, should account change to Founder?**
+
+**Decision: Allow account type switching**
+- Simple: "Update account type" in settings
+- Can only switch between Founder ↔ Builder
+- Cannot switch to Investor (requires re-verification)
+- One switch per 30 days (prevents gaming)
+- All content remains, just changes context
+
+---
+
+## **13. ONBOARDING FLOW**
+
+### **Decision: Role-Specific Onboarding**
+
+**For Founders (3 minutes):**
+
+1. Welcome video (15 seconds)
+2. "Record your pitch" prompt with examples
+3. Choose visibility (default: Public)
+4. Add tags (#industry, #stage, etc.)
+5. Set "Looking for" badges
+6. Follow 5 suggested founders in your space
+7. Tutorial: "Now browse the Pitches tab for inspiration"
+
+**For Builders:**
+
+1. Welcome video
+2. "What are you great at?" (select skills)
+3. "What do you want to build?" (industries of interest)
+4. Upload portfolio (optional)
+5. Follow 5 founders in interesting spaces
+6. Tutorial: "Engage with ideas you love"
+
+**For Investors:**
+
+1. Welcome video
+2. Verification process (LinkedIn OR investment proof)
+3. "Manual review in 24-48 hours" message
+4. While waiting: Can browse, can't message/engage
+5. Once approved:
+   - Set investment thesis
+   - Choose public vs private mode
+   - Select notification preferences (daily digest vs real-time)
+   - Follow interesting verticals
+6. Tutorial: "Use 'For You' tab for curated deal flow"
+
+---
+
+## **14. NOTIFICATION STRATEGY**
+
+### **Decision: Personalized Notification Hierarchy**
+
+**Founders receive notifications for:**
+
+**High Priority (Push + Email):**
+- Investor "Express Interest"
+- DM from verified investor
+- Your pitch is trending
+- Milestone reached (100 views, 1K views, etc.)
+
+**Medium Priority (Push only):**
+- New comment on your pitch
+- Someone followed you
+- New DM from founder/builder
+- Weekly engagement summary
+
+**Low Priority (In-app only):**
+- Likes on content
+- New post from someone you follow
+
+**Opt-out available for each category**
+
+### **Investors receive:**
+
+**High Priority:**
+- Pitch matching your thesis posted
+- Founder you saved posts update
+- Direct message from founder
+
+**Medium:**
+- Weekly curated digest (top pitches)
+
+**Low:**
+- Likes on your content (if posting)
+
+### **Weekly Digest Email (For Everyone):**
+- Top pitches in your interests
+- Trending in your industry
+- Success stories
+- Platform updates
+- Can unsubscribe, defaults to ON
+
+---
+
+## **15. CONTENT GUIDELINES & RULES**
+
+### **Decision: Clear, Enforced Content Policy**
+
+**Allowed:**
+- ✅ Startup pitches
+- ✅ Product demos
+- ✅ Progress updates
+- ✅ Asking for feedback
+- ✅ Sharing learnings
+- ✅ Investment thesis (investors)
+- ✅ Portfolio showcases (builders)
+- ✅ Failure/pivot stories
+- ✅ Team/culture content
+
+**Not Allowed:**
+- ❌ Adult/NSFW content
+- ❌ Hate speech, harassment
+- ❌ Scams, pyramid schemes
+- ❌ Illegal activities (unless platform specifically for legal tech)
+- ❌ Impersonation
+- ❌ Spam/excessive posting
+- ❌ Unrelated content (memes, politics unless relevant to startup)
+- ❌ Competitor attacks (be professional)
+
+**Gray Areas (Case-by-case):**
+- Cryptocurrency/web3 projects (allowed, but scrutinized for scams)
+- Controversial industries (cannabis, gambling - allowed in legal jurisdictions)
+- Personal branding content (allowed if adds value)
+
+---
+
+## **16. TECHNICAL DECISIONS**
+
+### **Video Infrastructure:**
+
+**Decision: Use Cloudflare Stream or Mux**
+- Built-in video hosting, encoding, CDN
+- Automatic quality optimization
+- Analytics included
+- Cost: ~$5 per 1000 minutes stored, $1 per 1000 minutes viewed
+- Cheaper than building in-house
+- Scales automatically
+
+**File Limits:**
+- Max video length: 90 seconds (strictly enforced)
+- Max file size: 500MB (should be ~50-100MB for 90sec)
+- Formats: MP4, MOV, WebM
+- Resolution: 1080p max (auto-downscaled for mobile)
+
+### **Mobile-First Decision:**
+
+**Phase 1: Mobile app only (iOS + Android)**
+- Core experience is vertical video
+- Native feels better than web for this
+- Easy to record in-app
+- Push notifications work better
+
+**Phase 2: Web version (browse only)**
+- Can't upload from web (prevents low-effort content)
+- Can browse, comment, message
+- Good for investors (desk research)
+
+### **Tech Stack Recommendation:**
+
+**Frontend:**
+- React Native (iOS + Android from one codebase)
+- Expo for faster development
+
+**Backend:**
+- Node.js + Express (or Supabase for speed)
+- PostgreSQL (relational data: users, posts, relationships)
+- Redis (caching, real-time features)
+
+**Video:**
+- Cloudflare Stream or Mux
+
+**Storage:**
+- S3 for user uploads (images, docs)
+
+**Auth:**
+- Firebase Auth or Clerk
+
+**Payments:**
+- Stripe (subscriptions, premium)
+
+**Analytics:**
+- Mixpanel (user behavior)
+- Custom dashboard for creators
+
+**Hosting:**
+- Railway, Render, or AWS
+
+**Cost for MVP: $500-1000/month** once live with users
+
+

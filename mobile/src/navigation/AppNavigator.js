@@ -17,6 +17,19 @@ import SubscriptionScreen from '../screens/profile/SubscriptionScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ExpressInterestScreen from '../screens/messages/ExpressInterestScreen';
 import NotificationSettingsScreen from '../screens/profile/NotificationSettingsScreen';
+import AccountTypeScreen from '../screens/auth/AccountTypeScreen';
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
+import SwitchAccountScreen from '../screens/profile/SwitchAccountScreen';
+import AddAccountScreen from '../screens/profile/AddAccountScreen';
+import PrivacyScreen from '../screens/profile/PrivacyScreen';
+import SecurityScreen from '../screens/profile/SecurityScreen';
+import HelpScreen from '../screens/profile/HelpScreen';
+import TermsScreen from '../screens/profile/TermsScreen';
+import PrivacyPolicyScreen from '../screens/profile/PrivacyPolicyScreen';
+import BlockedUsersScreen from '../screens/profile/BlockedUsersScreen';
+import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
+import DefaultVisibilityScreen from '../screens/profile/DefaultVisibilityScreen';
+import HelpArticleScreen from '../screens/profile/HelpArticleScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -99,6 +112,78 @@ const AppNavigator = () => {
                     <Stack.Screen
                         name="NotificationSettings"
                         component={NotificationSettingsScreen}
+                    />
+                    <Stack.Screen
+                        name="AccountType"
+                        component={AccountTypeScreen}
+                        options={{
+                            presentation: 'modal',
+                            animation: 'slide_from_bottom'
+                        }}
+                    />
+                    <Stack.Screen
+                        name="SwitchAccount"
+                        component={SwitchAccountScreen}
+                        options={{
+                            presentation: 'modal',
+                            animation: 'slide_from_bottom'
+                        }}
+                    />
+                    <Stack.Screen
+                        name="Onboarding"
+                        component={OnboardingScreen}
+                        options={{
+                            presentation: 'fullScreenModal',
+                            animation: 'slide_from_bottom'
+                        }}
+                    />
+                    <Stack.Screen
+                        name="AddAccount"
+                        component={AddAccountScreen}
+                        options={{
+                            presentation: 'modal',
+                            animation: 'slide_from_bottom'
+                        }}
+                    />
+                    <Stack.Screen
+                        name="Privacy"
+                        component={PrivacyScreen}
+                    />
+                    <Stack.Screen
+                        name="Security"
+                        component={SecurityScreen}
+                    />
+                    <Stack.Screen
+                        name="Help"
+                        component={HelpScreen}
+                    />
+                    <Stack.Screen
+                        name="Terms"
+                        component={TermsScreen}
+                    />
+                    <Stack.Screen
+                        name="PrivacyPolicy"
+                        component={PrivacyPolicyScreen}
+                    />
+                    <Stack.Screen
+                        name="BlockedUsers"
+                        component={BlockedUsersScreen}
+                        options={{ presentation: 'modal' }}
+                    />
+                    <Stack.Screen
+                        name="ChangePassword"
+                        component={ChangePasswordScreen}
+                        options={{ presentation: 'modal' }}
+                    />
+                    <Stack.Screen
+                        name="DefaultVisibility"
+                        component={DefaultVisibilityScreen}
+                        options={{ presentation: 'modal' }}
+                    />
+                    <Stack.Screen
+                        name="HelpArticle"
+                        component={HelpArticleScreen}
+                        options={{ presentation: 'modal' }}
                     />
                 </>
             )}

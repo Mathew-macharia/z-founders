@@ -135,7 +135,10 @@ router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
                 bio: profile.bio,
                 location: profile.location,
                 website: profile.website,
-                isPublic: profile.isPublic
+                isPublic: profile.isPublic,
+                showInSearch: profile.showInSearch,
+                showActivityStatus: profile.showActivityStatus,
+                allowMessagesFromEveryone: profile.allowMessagesFromEveryone
             }
         });
     }
@@ -388,6 +391,141 @@ router.delete('/:id/follow', authenticate, asyncHandler(async (req, res) => {
     });
 
     res.json({ message: 'Unfollowed user' });
+}));
+
+/**
+ * GET /api/users/me/blocked
+ * Get users blocked by current user
+ */
+router.get('/me/blocked', authenticate, asyncHandler(async (req, res) => {
+    const blocked = await prisma.block.findMany({
+        where: { blockerId: req.user.id },
+        include: { blocked: { include: { profile: true } } }
+    });
+
+    const formatted = blocked.map(b => ({
+        id: b.blocked.id,
+        email: b.blocked.email,
+        profile: b.blocked.profile,
+        blockedAt: b.createdAt
+    }));
+
+    res.json({ blocked: formatted });
+}));
+
+/**
+ * POST /api/users/:id/block
+ * Block a user
+ */
+router.post('/:id/block', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (id === req.user.id) {
+        return res.status(400).json({ error: 'Cannot block yourself' });
+    }
+
+    // Check if already blocked
+    const existing = await prisma.block.findUnique({
+        where: {
+            blockerId_blockedId: {
+                blockerId: req.user.id,
+                blockedId: id
+            }
+        }
+    });
+
+    if (existing) {
+        return res.json({ message: 'User already blocked' });
+    }
+
+    // Create block
+    await prisma.block.create({
+        data: {
+            blockerId: req.user.id,
+            blockedId: id
+        }
+    });
+
+    // Also force unfollow both ways
+    await prisma.follow.deleteMany({
+        where: {
+            OR: [
+                { followerId: req.user.id, followingId: id },
+                { followerId: id, followingId: req.user.id }
+            ]
+        }
+    });
+
+    res.json({ message: 'User blocked' });
+}));
+
+/**
+ * DELETE /api/users/:id/block
+ * Unblock a user
+ */
+router.delete('/:id/block', authenticate, asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    await prisma.block.deleteMany({
+        where: {
+            blockerId: req.user.id,
+            blockedId: id
+        }
+    });
+
+    res.json({ message: 'User unblocked' });
+}));
+
+/**
+ * GET /api/users/me/export
+ * Export user data (JSON)
+ */
+router.get('/me/export', authenticate, asyncHandler(async (req, res) => {
+    const fullUser = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        include: {
+            profile: true,
+            founderProfile: true,
+            investorProfile: true,
+            builderProfile: true,
+            videos: true,
+            messagesSent: true,
+            sentMessages: { include: { conversation: true } },
+            following: true,
+            followers: true,
+            searchHistory: true,
+            sessions: true
+        }
+    });
+
+    // Sanitize
+    const exportData = {
+        ...fullUser,
+        passwordHash: undefined,
+        resetPasswordToken: undefined,
+        sentMessages: fullUser.sentMessages.map(m => ({
+            content: m.content,
+            sentAt: m.createdAt,
+            conversationId: m.conversationId
+        }))
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=zfounders-data.json');
+    res.json(exportData);
+}));
+
+/**
+ * DELETE /api/users/me
+ * Permanently delete account
+ */
+router.delete('/me', authenticate, asyncHandler(async (req, res) => {
+    // Hard delete - Cascade will handle relations
+    await prisma.user.delete({
+        where: { id: req.user.id }
+    });
+
+    res.json({ message: 'Account permanently deleted' });
 }));
 
 /**

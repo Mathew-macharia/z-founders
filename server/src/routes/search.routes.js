@@ -29,6 +29,10 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
                     { investorProfile: { firm: { contains: q, mode: 'insensitive' } } }
                 ],
                 isActive: true,
+                // Privacy: Hide users who disabled search
+                profile: {
+                    showInSearch: true
+                },
                 // Don't show private investors in search
                 NOT: {
                     AND: [

@@ -11,8 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../theme';
 import { notificationsAPI } from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 
 const NotificationSettingsScreen = ({ navigation }) => {
+    const { user } = useAuthStore();
+    const accountType = user?.accountType;
     const [settings, setSettings] = useState({
         pushEnabled: true,
         emailEnabled: true,
@@ -189,16 +192,20 @@ const NotificationSettingsScreen = ({ navigation }) => {
                         />
                     </View>
 
-                    {/* Investor Notifications */}
-                    <Text style={styles.sectionTitle}>Investor Activity</Text>
-                    <View style={styles.section}>
-                        <SettingItem
-                            icon="heart-circle"
-                            label="Express Interest"
-                            description="When an investor expresses interest"
-                            settingKey="investorInterest"
-                        />
-                    </View>
+                    {/* Investor Notifications - Founders Only */}
+                    {accountType === 'FOUNDER' && (
+                        <>
+                            <Text style={styles.sectionTitle}>Investor Activity</Text>
+                            <View style={styles.section}>
+                                <SettingItem
+                                    icon="heart-circle"
+                                    label="Express Interest"
+                                    description="When an investor expresses interest"
+                                    settingKey="investorInterest"
+                                />
+                            </View>
+                        </>
+                    )}
 
                     {/* Milestones */}
                     <Text style={styles.sectionTitle}>Milestones</Text>

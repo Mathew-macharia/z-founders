@@ -174,6 +174,7 @@ const RecordScreen = ({ navigation }) => {
 
     const canPostType = (type) => {
         if (type === 'PITCH') return user?.accountType === 'FOUNDER';
+        if (type === 'WIN_LOSS') return user?.accountType === 'FOUNDER';
         return true;
     };
 
@@ -223,52 +224,78 @@ const RecordScreen = ({ navigation }) => {
                             contentContainerStyle={styles.detailsScrollContent}
                             showsVerticalScrollIndicator={false}
                         >
+
                             {/* Video Type */}
                             <Text style={styles.sectionLabel}>What type of content is this?</Text>
                             <View style={styles.typeOptions}>
-                                {VIDEO_TYPES.map((type) => (
-                                    <TouchableOpacity
-                                        key={type.id}
-                                        style={[
-                                            styles.typeOption,
-                                            videoType === type.id && styles.typeOptionActive,
-                                            !canPostType(type.id) && styles.typeOptionDisabled
-                                        ]}
-                                        onPress={() => canPostType(type.id) && setVideoType(type.id)}
-                                        disabled={!canPostType(type.id)}
-                                    >
-                                        <Text style={[
-                                            styles.typeOptionLabel,
-                                            videoType === type.id && styles.typeOptionLabelActive
-                                        ]}>
-                                            {type.label}
-                                        </Text>
-                                        <Text style={styles.typeOptionDesc}>{type.description}</Text>
-                                    </TouchableOpacity>
-                                ))}
+                                {VIDEO_TYPES.filter(type => canPostType(type.id)).map((type) => {
+                                    let label = type.label;
+                                    let description = type.description;
+
+                                    if (user?.accountType === 'INVESTOR') {
+                                        if (type.id === 'UPDATE') {
+                                            label = '📈 Market Insight';
+                                            description = 'Share investment thesis & advice';
+                                        } else if (type.id === 'ASK') {
+                                            label = '🤝 Founder Request';
+                                            description = 'Describe who you are looking for';
+                                        }
+                                    } else if (user?.accountType === 'BUILDER') {
+                                        if (type.id === 'UPDATE') {
+                                            label = '🛠️ Builder Update';
+                                            description = 'Show what you are building';
+                                        } else if (type.id === 'ASK') {
+                                            label = '🙋 Question';
+                                            description = 'Ask the community for help';
+                                        }
+                                    }
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={type.id}
+                                            style={[
+                                                styles.typeOption,
+                                                videoType === type.id && styles.typeOptionActive
+                                            ]}
+                                            onPress={() => setVideoType(type.id)}
+                                        >
+                                            <Text style={[
+                                                styles.typeOptionLabel,
+                                                videoType === type.id && styles.typeOptionLabelActive
+                                            ]}>
+                                                {label}
+                                            </Text>
+                                            <Text style={styles.typeOptionDesc}>{description}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                             </View>
 
-                            {/* Visibility */}
-                            <Text style={styles.sectionLabel}>Who can see this?</Text>
-                            <View style={styles.visibilityOptions}>
-                                {VISIBILITY_OPTIONS.map((opt) => (
-                                    <TouchableOpacity
-                                        key={opt.id}
-                                        style={[
-                                            styles.visibilityOption,
-                                            visibility === opt.id && styles.visibilityOptionActive
-                                        ]}
-                                        onPress={() => setVisibility(opt.id)}
-                                    >
-                                        <Text style={[
-                                            styles.visibilityLabel,
-                                            visibility === opt.id && styles.visibilityLabelActive
-                                        ]}>
-                                            {opt.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                            {/* Visibility - Founders Only */}
+                            {user?.accountType === 'FOUNDER' && (
+                                <>
+                                    <Text style={styles.sectionLabel}>Who can see this?</Text>
+                                    <View style={styles.visibilityOptions}>
+                                        {VISIBILITY_OPTIONS.map((opt) => (
+                                            <TouchableOpacity
+                                                key={opt.id}
+                                                style={[
+                                                    styles.visibilityOption,
+                                                    visibility === opt.id && styles.visibilityOptionActive
+                                                ]}
+                                                onPress={() => setVisibility(opt.id)}
+                                            >
+                                                <Text style={[
+                                                    styles.visibilityLabel,
+                                                    visibility === opt.id && styles.visibilityLabelActive
+                                                ]}>
+                                                    {opt.label}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </>
+                            )}
 
                             {/* Caption */}
                             <TextInput
@@ -290,22 +317,24 @@ const RecordScreen = ({ navigation }) => {
                             />
 
                             {/* Pin option for pitches */}
-                            {videoType === 'PITCH' && user?.accountType === 'FOUNDER' && (
-                                <TouchableOpacity
-                                    style={styles.pinOption}
-                                    onPress={() => setIsPinned(!isPinned)}
-                                >
-                                    <Ionicons
-                                        name={isPinned ? "checkbox" : "square-outline"}
-                                        size={24}
-                                        color={colors.primary[500]}
-                                    />
-                                    <View style={styles.pinOptionText}>
-                                        <Text style={styles.pinLabel}>Pin as main pitch</Text>
-                                        <Text style={styles.pinDesc}>This will be shown first on your profile</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            )}
+                            {
+                                videoType === 'PITCH' && user?.accountType === 'FOUNDER' && (
+                                    <TouchableOpacity
+                                        style={styles.pinOption}
+                                        onPress={() => setIsPinned(!isPinned)}
+                                    >
+                                        <Ionicons
+                                            name={isPinned ? "checkbox" : "square-outline"}
+                                            size={24}
+                                            color={colors.primary[500]}
+                                        />
+                                        <View style={styles.pinOptionText}>
+                                            <Text style={styles.pinLabel}>Pin as main pitch</Text>
+                                            <Text style={styles.pinDesc}>This will be shown first on your profile</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                )
+                            }
 
                             <Button
                                 title="Post Video"
@@ -314,10 +343,10 @@ const RecordScreen = ({ navigation }) => {
                                 fullWidth
                                 style={styles.uploadButton}
                             />
-                        </ScrollView>
-                    </SafeAreaView>
-                </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
+                        </ScrollView >
+                    </SafeAreaView >
+                </TouchableWithoutFeedback >
+            </KeyboardAvoidingView >
         );
     }
 

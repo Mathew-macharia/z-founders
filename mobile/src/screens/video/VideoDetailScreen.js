@@ -11,7 +11,8 @@ import {
     FlatList,
     TextInput as RNTextInput,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Video, ResizeMode } from 'expo-av';
@@ -120,13 +121,32 @@ const VideoDetailScreen = ({ navigation, route }) => {
     const handleComment = async () => {
         if (!newComment.trim()) return;
 
-        try {
-            const response = await videosAPI.comment(videoId, { content: newComment });
-            setComments([response.data.comment, ...comments]);
-            setNewComment('');
-        } catch (error) {
-            console.error('Comment failed:', error);
+        const submitComment = async () => {
+            try {
+                const response = await videosAPI.comment(videoId, { content: newComment });
+                setComments([response.data.comment, ...comments]);
+                setNewComment('');
+            } catch (error) {
+                console.error('Comment failed:', error);
+            }
+        };
+
+        if (user?.accountType === 'INVESTOR') {
+            const investorProfile = user?.investorProfile;
+            if (investorProfile && !investorProfile.isPublicMode) {
+                Alert.alert(
+                    'Reveal Your Profile?',
+                    'Commenting will make your profile visible to this founder. Continue?',
+                    [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Continue', onPress: submitComment }
+                    ]
+                );
+                return;
+            }
         }
+
+        submitComment();
     };
 
     const getVideoTypeBadge = () => {

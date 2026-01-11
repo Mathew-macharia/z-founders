@@ -129,15 +129,15 @@ const MyProfileScreen = ({ navigation }) => {
                             </View>
                         </View>
 
-                        {/* Tagline */}
-                        {profileData?.founderProfile?.tagline && (
+                        {/* Founder: Tagline */}
+                        {user?.accountType === 'FOUNDER' && profileData?.founderProfile?.tagline && (
                             <Text style={styles.tagline}>
                                 {profileData.founderProfile.tagline}
                             </Text>
                         )}
 
-                        {/* Looking For Badges */}
-                        {getLookingForBadges().length > 0 && (
+                        {/* Founder: Looking For Badges */}
+                        {user?.accountType === 'FOUNDER' && getLookingForBadges().length > 0 && (
                             <View style={styles.lookingForRow}>
                                 {getLookingForBadges().map((b, index) => (
                                     <View key={index} style={styles.lookingForBadge}>
@@ -145,6 +145,79 @@ const MyProfileScreen = ({ navigation }) => {
                                         <Text style={styles.lookingForText}>{b.label}</Text>
                                     </View>
                                 ))}
+                            </View>
+                        )}
+
+                        {/* Builder: Skills & Availability */}
+                        {user?.accountType === 'BUILDER' && profileData?.builderProfile && (
+                            <View style={styles.builderInfoSection}>
+                                {profileData.builderProfile.skills?.length > 0 && (
+                                    <View style={styles.skillsRow}>
+                                        {profileData.builderProfile.skills.map((skill, index) => (
+                                            <View key={index} style={styles.skillChip}>
+                                                <Text style={styles.skillText}>{skill}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                )}
+                                {profileData.builderProfile.availability && (
+                                    <View style={styles.availabilityBadge}>
+                                        <Ionicons name="time-outline" size={14} color={colors.text.secondary} />
+                                        <Text style={styles.availabilityText}>
+                                            {profileData.builderProfile.availability}
+                                        </Text>
+                                    </View>
+                                )}
+                                {profileData.builderProfile.lookingForProject && (
+                                    <View style={styles.lookingForBadge}>
+                                        <Text style={styles.lookingForIcon}>🔍</Text>
+                                        <Text style={styles.lookingForText}>Looking for a project</Text>
+                                    </View>
+                                )}
+                            </View>
+                        )}
+
+                        {/* Investor: Firm, Thesis & Verification */}
+                        {user?.accountType === 'INVESTOR' && profileData?.investorProfile && (
+                            <View style={styles.investorInfoSection}>
+                                {profileData.investorProfile.firm && (
+                                    <Text style={styles.firmText}>{profileData.investorProfile.firm}</Text>
+                                )}
+                                {profileData.investorProfile.thesis && (
+                                    <Text style={styles.thesisText} numberOfLines={2}>
+                                        {profileData.investorProfile.thesis}
+                                    </Text>
+                                )}
+                                <View style={[
+                                    styles.verificationBadge,
+                                    {
+                                        backgroundColor: profileData.investorVerification?.status === 'APPROVED'
+                                            ? colors.success.main + '20'
+                                            : colors.warning.main + '20'
+                                    }
+                                ]}>
+                                    <Ionicons
+                                        name={profileData.investorVerification?.status === 'APPROVED'
+                                            ? 'shield-checkmark'
+                                            : 'time-outline'}
+                                        size={14}
+                                        color={profileData.investorVerification?.status === 'APPROVED'
+                                            ? colors.success.main
+                                            : colors.warning.main}
+                                    />
+                                    <Text style={[
+                                        styles.verificationText,
+                                        {
+                                            color: profileData.investorVerification?.status === 'APPROVED'
+                                                ? colors.success.main
+                                                : colors.warning.main
+                                        }
+                                    ]}>
+                                        {profileData.investorVerification?.status === 'APPROVED'
+                                            ? 'Verified Investor'
+                                            : 'Pending Verification'}
+                                    </Text>
+                                </View>
                             </View>
                         )}
 
@@ -224,13 +297,25 @@ const MyProfileScreen = ({ navigation }) => {
                                 <Ionicons name="videocam-outline" size={48} color={colors.text.tertiary} />
                                 <Text style={styles.emptyTitle}>No videos yet</Text>
                                 <Text style={styles.emptySubtitle}>
-                                    Your videos will appear here
+                                    {user?.accountType === 'FOUNDER' && 'Record your first pitch video'}
+                                    {user?.accountType === 'BUILDER' && 'Share updates or ask questions'}
+                                    {user?.accountType === 'INVESTOR' && 'Share investment insights or thesis'}
+                                    {user?.accountType === 'LURKER' && 'Upgrade your account to post content'}
                                 </Text>
-                                <Button
-                                    title="Record Your First Pitch"
-                                    onPress={() => navigation.navigate('Record')}
-                                    style={styles.emptyButton}
-                                />
+                                {user?.accountType === 'FOUNDER' && (
+                                    <Button
+                                        title="Record Your First Pitch"
+                                        onPress={() => navigation.navigate('Record')}
+                                        style={styles.emptyButton}
+                                    />
+                                )}
+                                {user?.accountType !== 'FOUNDER' && user?.accountType !== 'LURKER' && (
+                                    <Button
+                                        title="Post Your First Video"
+                                        onPress={() => navigation.navigate('Record')}
+                                        style={styles.emptyButton}
+                                    />
+                                )}
                             </View>
                         ) : (
                             <View style={styles.gridContainer}>
@@ -371,6 +456,74 @@ const styles = StyleSheet.create({
         color: colors.text.secondary,
         textAlign: 'center',
         marginBottom: spacing[3],
+    },
+    builderInfoSection: {
+        alignItems: 'center',
+        marginBottom: spacing[4],
+        width: '100%',
+        paddingHorizontal: spacing[4],
+    },
+    skillsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: spacing[2],
+        marginBottom: spacing[3],
+    },
+    skillChip: {
+        backgroundColor: colors.primary[500] + '15',
+        paddingHorizontal: spacing[3],
+        paddingVertical: spacing[1],
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.primary[500] + '30',
+    },
+    skillText: {
+        ...typography.styles.small,
+        color: colors.primary[600],
+    },
+    availabilityBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing[2],
+        marginBottom: spacing[2],
+        paddingHorizontal: spacing[3],
+        paddingVertical: spacing[1],
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.background.tertiary,
+    },
+    availabilityText: {
+        ...typography.styles.bodySmall,
+        color: colors.text.secondary,
+    },
+    investorInfoSection: {
+        alignItems: 'center',
+        marginBottom: spacing[4],
+        paddingHorizontal: spacing[4],
+    },
+    firmText: {
+        ...typography.styles.h4,
+        color: colors.text.primary,
+        marginBottom: spacing[1],
+    },
+    thesisText: {
+        ...typography.styles.body,
+        color: colors.text.secondary,
+        textAlign: 'center',
+        marginBottom: spacing[3],
+        paddingHorizontal: spacing[4],
+    },
+    verificationBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing[2],
+        paddingHorizontal: spacing[3],
+        paddingVertical: spacing[1.5],
+        borderRadius: borderRadius.full,
+    },
+    verificationText: {
+        ...typography.styles.small,
+        fontFamily: typography.fontFamily.semiBold,
     },
     lookingForRow: {
         flexDirection: 'row',

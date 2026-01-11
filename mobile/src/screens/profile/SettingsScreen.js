@@ -6,16 +6,29 @@ import { colors, typography, spacing, borderRadius } from '../../theme';
 import { useAuthStore } from '../../store/authStore';
 
 const SettingsScreen = ({ navigation }) => {
-    const { logout } = useAuthStore();
+    const { logout, user } = useAuthStore();
+
+    // Build account items dynamically based on user type
+    const accountItems = [
+        { icon: 'person-outline', label: 'Edit Profile', screen: 'EditProfile' },
+        { icon: 'swap-horizontal', label: 'Switch Account', screen: 'SwitchAccount' },
+    ];
+
+    // Only show "Change Account Type" for Lurkers
+    if (user?.accountType === 'LURKER') {
+        accountItems.push({
+            icon: 'arrow-up-circle-outline',
+            label: 'Change Account Type',
+            screen: 'AccountType'
+        });
+    }
+
+    accountItems.push({ icon: 'diamond-outline', label: 'Subscription', screen: 'Subscription' });
 
     const settingsGroups = [
         {
             title: 'Account',
-            items: [
-                { icon: 'person-outline', label: 'Edit Profile', screen: 'EditProfile' },
-                { icon: 'swap-horizontal', label: 'Switch Account Type', screen: 'AccountType' },
-                { icon: 'diamond-outline', label: 'Subscription', screen: 'Subscription' },
-            ]
+            items: accountItems
         },
         {
             title: 'Preferences',
@@ -30,7 +43,7 @@ const SettingsScreen = ({ navigation }) => {
             items: [
                 { icon: 'help-circle-outline', label: 'Help Center', screen: 'Help' },
                 { icon: 'document-text-outline', label: 'Terms of Service', screen: 'Terms' },
-                { icon: 'lock-closed-outline', label: 'Privacy Policy', screen: 'Privacy' },
+                { icon: 'lock-closed-outline', label: 'Privacy Policy', screen: 'PrivacyPolicy' },
             ]
         },
     ];
