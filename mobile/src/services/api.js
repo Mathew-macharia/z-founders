@@ -71,6 +71,7 @@ export const authAPI = {
 
 export const usersAPI = {
     getUser: (id) => api.get(`/users/${id}`),
+    getProfile: (id) => api.get(`/users/${id}`), // Alias for getUser
     updateUser: (id, data) => api.patch(`/users/${id}`, data),
     follow: (id) => api.post(`/users/${id}/follow`),
     unfollow: (id) => api.delete(`/users/${id}/follow`),
@@ -81,6 +82,7 @@ export const usersAPI = {
 export const videosAPI = {
     upload: (data) => api.post('/videos', data),
     get: (id) => api.get(`/videos/${id}`),
+    getByUser: (userId) => api.get(`/users/${userId}`).then(res => ({ data: { videos: res.data.user?.videos || [] } })), // Videos from user profile
     update: (id, data) => api.patch(`/videos/${id}`, data),
     delete: (id) => api.delete(`/videos/${id}`),
     pin: (id) => api.post(`/videos/${id}/pin`),

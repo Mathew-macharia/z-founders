@@ -54,8 +54,8 @@ router.get('/home', authenticate, asyncHandler(async (req, res) => {
                 ...(preferences?.industries?.length ? [{
                     tags: { hasSome: preferences.industries }
                 }] : []),
-                // Recent trending videos
-                { viewCount: { gte: 10 } }
+                // Recent videos from all users (last 7 days)
+                { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }
             ],
             AND: {
                 OR: getVisibilityFilter(req.user)
@@ -123,7 +123,6 @@ router.get('/pitches', optionalAuth, asyncHandler(async (req, res) => {
 
     const where = {
         type: 'PITCH',
-        isPinned: true,
         OR: getVisibilityFilter(req.user)
     };
 

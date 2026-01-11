@@ -54,14 +54,39 @@ const ProfileScreen = ({ navigation, route }) => {
 
     const handleFollow = async () => {
         try {
+            // Optimistic update
+            const newIsFollowing = !isFollowing;
+            setIsFollowing(newIsFollowing);
+
+            // Update follower count locally
+            setProfile(prev => ({
+                ...prev,
+                _count: {
+                    ...prev._count,
+                    followers: newIsFollowing
+                        ? (prev._count?.followers || 0) + 1
+                        : Math.max(0, (prev._count?.followers || 0) - 1)
+                }
+            }));
+
             if (isFollowing) {
                 await usersAPI.unfollow(userId);
             } else {
                 await usersAPI.follow(userId);
             }
-            setIsFollowing(!isFollowing);
         } catch (error) {
             console.error('Follow failed:', error);
+            // Revert on error
+            setIsFollowing(isFollowing);
+            setProfile(prev => ({
+                ...prev,
+                _count: {
+                    ...prev._count,
+                    followers: isFollowing
+                        ? (prev._count?.followers || 0) + 1
+                        : Math.max(0, (prev._count?.followers || 0) - 1)
+                }
+            }));
         }
     };
 

@@ -2,6 +2,7 @@ const express = require('express');
 const prisma = require('../config/database');
 const { asyncHandler } = require('../middleware/error.middleware');
 const { authenticate, requireVerifiedInvestor } = require('../middleware/auth.middleware');
+const socketService = require('../services/socket.service');
 
 const router = express.Router();
 
@@ -78,6 +79,18 @@ router.post('/', authenticate, requireVerifiedInvestor, asyncHandler(async (req,
                 videoId,
                 isPublic: investorProfile?.isPublicMode || false
             }
+        }
+    });
+
+    // Real-time Notification
+    socketService.emitNotification(founderId, {
+        type: 'express_interest',
+        message: 'An investor is interested in your pitch!',
+        data: {
+            interestId: interest.id,
+            investorId: req.user.id,
+            videoId,
+            isPublic: investorProfile?.isPublicMode || false
         }
     });
 
@@ -236,6 +249,13 @@ router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
                 body: 'The founder has accepted your interest. You can now message them.',
                 data: { founderId: req.user.id, conversationId: conversation.id }
             }
+        });
+
+        // Real-time Notification
+        socketService.emitNotification(interest.investorId, {
+            type: 'interest_accepted',
+            message: 'Founder accepted your interest! You can now message them.',
+            data: { founderId: req.user.id, conversationId: conversation.id }
         });
 
         res.json({

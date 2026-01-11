@@ -10,6 +10,7 @@ import {
     ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, borderRadius } from '../../theme';
@@ -24,9 +25,12 @@ const HomeScreen = ({ navigation }) => {
     const { videos, fetchFeed, isLoading, pagination, clearVideos } = useVideoStore();
     const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-        loadFeed();
-    }, []);
+    // Refresh feed every time screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            loadFeed(true);
+        }, [])
+    );
 
     const loadFeed = async (refresh = false) => {
         if (refresh) {

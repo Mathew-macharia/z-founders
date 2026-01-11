@@ -2,6 +2,7 @@ const express = require('express');
 const prisma = require('../config/database');
 const { asyncHandler } = require('../middleware/error.middleware');
 const { authenticate, requireAccountType } = require('../middleware/auth.middleware');
+const socketService = require('../services/socket.service');
 
 const router = express.Router();
 
@@ -371,6 +372,13 @@ router.post('/:id/follow', authenticate, asyncHandler(async (req, res) => {
             body: `${req.user.email} started following you`,
             data: { followerId: req.user.id }
         }
+    });
+
+    // Real-time Notification
+    socketService.emitNotification(id, {
+        type: 'new_follower',
+        message: `${req.user.email} followed you`,
+        data: { followerId: req.user.id }
     });
 
     res.json({ message: 'Following user' });

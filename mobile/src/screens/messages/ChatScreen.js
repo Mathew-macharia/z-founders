@@ -18,10 +18,11 @@ import { messagesAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
 const ChatScreen = ({ navigation, route }) => {
-    const { conversationId } = route.params || {};
+    const { conversationId: paramConversationId, userId } = route.params || {};
     const { user } = useAuthStore();
     const flatListRef = useRef(null);
 
+    const [conversationId, setConversationId] = useState(paramConversationId);
     const [conversation, setConversation] = useState(null);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -29,12 +30,38 @@ const ChatScreen = ({ navigation, route }) => {
     const [isSending, setIsSending] = useState(false);
 
     useEffect(() => {
-        loadConversation();
-        const interval = setInterval(loadConversation, 5000); // Poll for new messages
-        return () => clearInterval(interval);
-    }, [conversationId]);
+        if (conversationId) {
+            loadConversation();
+            const interval = setInterval(loadConversation, 5000);
+            return () => clearInterval(interval);
+        } else if (userId) {
+            findConversation();
+        }
+    }, [conversationId, userId]);
+
+    const findConversation = async () => {
+        try {
+            // Try to find existing conversation with this user
+            const response = await messagesAPI.getConversations();
+            const existing = response.data.conversations?.find(
+                c => c.otherParticipant?.id === userId
+            );
+
+            if (existing) {
+                setConversationId(existing.id);
+                // The useEffect will trigger loadConversation
+            } else {
+                // New conversation state
+                setIsLoading(false);
+            }
+        } catch (error) {
+            console.error('Failed to find conversation:', error);
+            setIsLoading(false);
+        }
+    };
 
     const loadConversation = async () => {
+        if (!conversationId) return;
         try {
             const response = await messagesAPI.getConversation(conversationId);
             setConversation(response.data.conversation);
@@ -50,10 +77,23 @@ const ChatScreen = ({ navigation, route }) => {
 
         setIsSending(true);
         try {
-            const response = await messagesAPI.sendMessage(conversationId, {
-                content: newMessage.trim()
-            });
-            setMessages([...messages, response.data.message]);
+            let response;
+            if (conversationId) {
+                response = await messagesAPI.sendMessage(conversationId, {
+                    content: newMessage.trim()
+                });
+                setMessages([...messages, response.data.message]);
+            } else {
+                // Start new conversation
+                response = await messagesAPI.startConversation({
+                    recipientId: userId,
+                    content: newMessage.trim()
+                });
+                setConversationId(response.data.conversation.id);
+                setConversation(response.data.conversation);
+                setMessages([response.data.message]);
+            }
+
             setNewMessage('');
             flatListRef.current?.scrollToEnd({ animated: true });
         } catch (error) {
@@ -62,15 +102,36 @@ const ChatScreen = ({ navigation, route }) => {
         setIsSending(false);
     };
 
-    const getOtherParticipant = () => {
-        if (!conversation) return null;
-        return conversation.participant1Id === user.id
-            ? conversation.participant2
-            : conversation.participant1;
-    };
+    const [otherParticipant, setOtherParticipant] = useState(null);
 
-    const otherParticipant = getOtherParticipant();
-    const isPrivate = otherParticipant?.isPrivate;
+    useEffect(() => {
+        if (conversation) {
+            setOtherParticipant(conversation.participant1Id === user.id
+                ? conversation.participant2
+                : conversation.participant1);
+        } else if (userId && !otherParticipant) {
+            // If we don't have a conversation yet, we might need to fetch the user details
+            // for the header. Usually passed in route params or we fetch profile
+            // For now, let's try to fetch user profile if we have userId
+            loadUserProfile();
+        }
+    }, [conversation, userId]);
+
+    const loadUserProfile = async () => {
+        if (!userId) return;
+        try {
+            const { usersAPI } = require('../../services/api'); // Dynamic import to avoid cycles if any
+            const response = await usersAPI.getProfile(userId);
+            setOtherParticipant(response.data.user);
+        } catch (e) {
+            console.log('Failed to load user for chat header', e);
+        }
+    }
+
+    const isPrivate = otherParticipant?.accountType === 'INVESTOR' &&
+        otherParticipant?.investorProfile &&
+        !otherParticipant.investorProfile.isPublicMode &&
+        !conversation?.isRevealed;
 
     const formatTime = (dateString) => {
         const date = new Date(dateString);

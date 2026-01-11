@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -9,6 +9,7 @@ import {
     FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, borderRadius } from '../../theme';
@@ -22,10 +23,17 @@ const MyProfileScreen = ({ navigation }) => {
     const [videos, setVideos] = useState([]);
     const [activeTab, setActiveTab] = useState('videos');
     const [stats, setStats] = useState({ followers: 0, following: 0, videos: 0 });
+    const [savedVideos, setSavedVideos] = useState([]);
 
-    useEffect(() => {
-        loadProfile();
-    }, []);
+    // Refresh profile every time screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            loadProfile();
+            if (activeTab === 'saved') {
+                loadSavedVideos();
+            }
+        }, [user?.id, activeTab])
+    );
 
     const loadProfile = async () => {
         try {
@@ -39,6 +47,15 @@ const MyProfileScreen = ({ navigation }) => {
             });
         } catch (error) {
             console.error('Failed to load profile:', error);
+        }
+    };
+
+    const loadSavedVideos = async () => {
+        try {
+            const response = await api.get('/videos/saved');
+            setSavedVideos(response.data.videos || []);
+        } catch (error) {
+            console.error('Failed to load saved videos:', error);
         }
     };
 
@@ -292,26 +309,20 @@ const MyProfileScreen = ({ navigation }) => {
 
                     {/* Videos Grid */}
                     <View style={styles.videosGrid}>
-                        {videos.length === 0 ? (
+                        {(activeTab === 'videos' ? videos : savedVideos).length === 0 ? (
                             <View style={styles.emptyState}>
-                                <Ionicons name="videocam-outline" size={48} color={colors.text.tertiary} />
-                                <Text style={styles.emptyTitle}>No videos yet</Text>
-                                <Text style={styles.emptySubtitle}>
-                                    {user?.accountType === 'FOUNDER' && 'Record your first pitch video'}
-                                    {user?.accountType === 'BUILDER' && 'Share updates or ask questions'}
-                                    {user?.accountType === 'INVESTOR' && 'Share investment insights or thesis'}
-                                    {user?.accountType === 'LURKER' && 'Upgrade your account to post content'}
+                                <Ionicons name={activeTab === 'videos' ? "videocam-outline" : "bookmark-outline"} size={48} color={colors.text.tertiary} />
+                                <Text style={styles.emptyTitle}>
+                                    {activeTab === 'videos' ? 'No videos yet' : 'No saved videos'}
                                 </Text>
-                                {user?.accountType === 'FOUNDER' && (
+                                <Text style={styles.emptySubtitle}>
+                                    {activeTab === 'videos'
+                                        ? (user?.accountType === 'FOUNDER' ? 'Record your first pitch video' : 'Share your journey with the community')
+                                        : 'Videos you save will appear here'}
+                                </Text>
+                                {activeTab === 'videos' && user?.accountType !== 'LURKER' && (
                                     <Button
-                                        title="Record Your First Pitch"
-                                        onPress={() => navigation.navigate('Record')}
-                                        style={styles.emptyButton}
-                                    />
-                                )}
-                                {user?.accountType !== 'FOUNDER' && user?.accountType !== 'LURKER' && (
-                                    <Button
-                                        title="Post Your First Video"
+                                        title={user?.accountType === 'FOUNDER' ? "Record Your First Pitch" : "Post Your First Video"}
                                         onPress={() => navigation.navigate('Record')}
                                         style={styles.emptyButton}
                                     />
@@ -319,7 +330,7 @@ const MyProfileScreen = ({ navigation }) => {
                             </View>
                         ) : (
                             <View style={styles.gridContainer}>
-                                {videos.map((video, index) => (
+                                {(activeTab === 'videos' ? videos : savedVideos).map((video, index) => (
                                     <TouchableOpacity
                                         key={video.id}
                                         style={styles.gridItem}

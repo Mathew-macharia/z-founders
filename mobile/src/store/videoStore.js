@@ -54,7 +54,11 @@ export const useVideoStore = create((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const response = await api.post('/videos', videoData);
-            set({ isLoading: false });
+            // Add new video to beginning of local videos array
+            set(state => ({
+                isLoading: false,
+                videos: [response.data.video, ...state.videos]
+            }));
             return { success: true, video: response.data.video };
         } catch (error) {
             set({ isLoading: false, error: error.response?.data?.error });

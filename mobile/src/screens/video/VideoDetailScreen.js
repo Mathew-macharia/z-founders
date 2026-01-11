@@ -72,12 +72,22 @@ const VideoDetailScreen = ({ navigation, route }) => {
     const handleLike = async () => {
         const newLiked = !isLiked;
         setIsLiked(newLiked);
+        // Update local count immediately for responsive UI
+        setVideo(prev => ({
+            ...prev,
+            likeCount: newLiked ? (prev.likeCount || 0) + 1 : Math.max(0, (prev.likeCount || 0) - 1)
+        }));
         await toggleLike(videoId, isLiked);
     };
 
     const handleSave = async () => {
         const newSaved = !isSaved;
         setIsSaved(newSaved);
+        // Update local state immediately
+        setVideo(prev => ({
+            ...prev,
+            isSaved: newSaved
+        }));
         await toggleSave(videoId, isSaved);
     };
 
@@ -126,6 +136,11 @@ const VideoDetailScreen = ({ navigation, route }) => {
                 const response = await videosAPI.comment(videoId, { content: newComment });
                 setComments([response.data.comment, ...comments]);
                 setNewComment('');
+                // Update local comment count immediately
+                setVideo(prev => ({
+                    ...prev,
+                    commentCount: (prev.commentCount || 0) + 1
+                }));
             } catch (error) {
                 console.error('Comment failed:', error);
             }

@@ -19,7 +19,15 @@ const moderationRoutes = require('./routes/moderation.routes');
 const { errorHandler } = require('./middleware/error.middleware');
 const { requestLogger } = require('./middleware/logger.middleware');
 
+// Import services
+const socketService = require('./services/socket.service');
+const http = require('http');
+
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.io
+socketService.initialize(server);
 
 // Security middleware
 app.use(helmet());
@@ -72,9 +80,10 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Z Founders API running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔌 Socket.io enabled`);
 });
 
 module.exports = app;

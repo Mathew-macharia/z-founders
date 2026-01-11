@@ -2,6 +2,7 @@ const express = require('express');
 const prisma = require('../config/database');
 const { asyncHandler } = require('../middleware/error.middleware');
 const { authenticate, requireAccountType, requireVerifiedInvestor } = require('../middleware/auth.middleware');
+const socketService = require('../services/socket.service');
 
 const router = express.Router();
 
@@ -315,6 +316,13 @@ router.post('/:id/messages', authenticate, asyncHandler(async (req, res) => {
         }
     });
 
+    // Real-time Notification
+    socketService.emitNotification(recipientId, {
+        type: 'new_message',
+        message: `New message from ${req.user.email}`,
+        data: { conversationId: id, messageId: message.id }
+    });
+
     res.status(201).json({ message });
 }));
 
@@ -470,6 +478,13 @@ router.post('/', authenticate, asyncHandler(async (req, res) => {
             body: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
             data: { conversationId: conversation.id }
         }
+    });
+
+    // Real-time Notification
+    socketService.emitNotification(recipientId, {
+        type: notifType, // 'new_message' or 'message_request'
+        message: status === 'REQUEST' ? 'New message request' : `New message from ${req.user.email}`,
+        data: { conversationId: conversation.id }
     });
 
     res.status(201).json({
