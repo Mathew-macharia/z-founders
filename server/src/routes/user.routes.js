@@ -146,7 +146,9 @@ router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
 
     // Update type-specific profiles
     if (founderProfile && req.user.accountType === 'FOUNDER') {
-        const cleanedFounder = cleanProfileData(founderProfile);
+        // Extract nested relations first to prevent them from being passed to upsert
+        const { fundraisingDetails, ...founderProps } = founderProfile;
+        const cleanedFounder = cleanProfileData(founderProps);
 
         await prisma.founderProfile.upsert({
             where: { userId: id },
@@ -158,8 +160,8 @@ router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
         });
 
         // Update fundraising details if provided
-        if (founderProfile.fundraisingDetails) {
-            const cleaningFundraising = cleanProfileData(founderProfile.fundraisingDetails, ['amount']);
+        if (fundraisingDetails) {
+            const cleaningFundraising = cleanProfileData(fundraisingDetails, ['amount']);
 
             const fp = await prisma.founderProfile.findUnique({ where: { userId: id } });
             await prisma.fundraisingDetails.upsert({
@@ -218,6 +220,7 @@ router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
     }
 
     // Return updated user
+    // Return updated user
     const updatedUser = await prisma.user.findUnique({
         where: { id },
         include: {
@@ -229,6 +232,8 @@ router.patch('/:id', authenticate, asyncHandler(async (req, res) => {
     });
 
     res.json({ user: updatedUser });
+
+
 }));
 
 /**

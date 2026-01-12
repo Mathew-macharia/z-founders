@@ -131,9 +131,42 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-    // ... (linked accounts methods unchanged) ...
-    // Note: To be thorough, I should check internal switchAccount calls but they generally set token.
-    // Ideally switchToAccount should also reconnect socket with new token.
+    // Add user data to linked accounts list
+    addToLinkedAccounts: async (user, token) => {
+        const { linkedAccounts } = get();
+        const existingIndex = linkedAccounts.findIndex(acc => acc.id === user.id);
+
+        const accountData = {
+            id: user.id,
+            email: user.email,
+            avatar: user.profile?.avatar,
+            accountType: user.accountType,
+            token
+        };
+
+        let newAccounts;
+        if (existingIndex >= 0) {
+            newAccounts = [...linkedAccounts];
+            newAccounts[existingIndex] = accountData;
+        } else {
+            newAccounts = [...linkedAccounts, accountData];
+        }
+
+        await SecureStore.setItemAsync(LINKED_ACCOUNTS_KEY, JSON.stringify(newAccounts));
+        set({ linkedAccounts: newAccounts });
+    },
+
+    // Remove a linked account
+    removeLinkedAccount: async (accountId) => {
+        const { linkedAccounts, user } = get();
+
+        // Don't remove currently active account
+        if (user && user.id === accountId) return;
+
+        const newAccounts = linkedAccounts.filter(acc => acc.id !== accountId);
+        await SecureStore.setItemAsync(LINKED_ACCOUNTS_KEY, JSON.stringify(newAccounts));
+        set({ linkedAccounts: newAccounts });
+    },
 
     // Switch to a different linked account
     switchToAccount: async (accountId) => {
@@ -221,7 +254,12 @@ export const useAuthStore = create((set, get) => ({
             const response = await api.patch(`/users/${get().user.id}`, updates);
             const updatedUser = response.data.user;
 
-            await SecureStore.setItemAsync(USER_KEY, JSON.stringify(updatedUser));
+            try {
+                await SecureStore.setItemAsync(USER_KEY, JSON.stringify(updatedUser));
+            } catch (storageError) {
+                // Continue even if storage fails, just update memory
+            }
+
             set({ user: updatedUser });
 
             // Update linked accounts with new data
